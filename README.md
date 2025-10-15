@@ -133,6 +133,32 @@ npm run swagger:json
 # outputs swagger.json in project root
 ```
 
+### Phone Auth (OTP via Namabar)
+
+- Request OTP
+
+```bash
+curl -s -X POST http://localhost:3000/auth/phone/request \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"+9647501234567"}'
+```
+
+- Verify OTP
+
+```bash
+curl -s -X POST http://localhost:3000/auth/phone/verify \
+  -H "Content-Type: application/json" \
+  -d '{"phoneNumber":"+9647501234567","code":"123456"}'
+```
+
+Env variables for SMS (Namabar):
+
+```env
+NAMABAR_API_URL=https://api.namabar.krd
+NAMABAR_API_KEY=your_api_key
+NAMABAR_SENDER_ID=RISQE
+```
+
 #### Example Requests
 
 - Register

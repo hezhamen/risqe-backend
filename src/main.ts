@@ -19,6 +19,7 @@ async function bootstrap() {
     .setDescription('API documentation for Risqe backend')
     .setVersion('1.0.0')
     .addBearerAuth()
+    .addServer('http://localhost:3000')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
