@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -14,17 +15,18 @@ async function bootstrap() {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('Risqe API')
-    .setDescription('API documentation for Risqe backend')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .addServer('http://localhost:3000')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
-  const scalarConfig: any = { theme: 'default', spec: { url: '/docs-json' } };
+  // Setup Scalar API documentation
+  const scalarConfig = { 
+    theme: 'default' as const, 
+    spec: { 
+      url: '/docs-json' 
+    } 
+  };
   app.use('/reference', apiReference(scalarConfig));
-  await app.listen(process.env.PORT ?? 3000);
+  
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  console.log(`📚 API Documentation: http://localhost:${port}/reference`);
 }
 bootstrap();
