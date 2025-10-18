@@ -40,12 +40,11 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   
-  // Setup Scalar API documentation with inline spec
-  const scalarConfig = { 
-    theme: 'default' as const, 
-    spec: document
-  };
-  app.use('/reference', apiReference(scalarConfig));
+  // Setup Scalar API documentation with inline content
+  app.use('/reference', apiReference({
+    theme: 'default' as const,
+    content: document,
+  }));
   
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
