@@ -24,16 +24,19 @@ This repository includes automated CI/CD pipeline that deploys to Heroku when yo
 ### 3. Verify Heroku App Name
 
 Make sure the Heroku app name in the workflow matches your actual app:
+
 - Current app name in workflow: `risqe-backend`
 - If different, update the `HEROKU_APP_NAME` environment variable in `.github/workflows/deploy.yml`
 
 ## How It Works
 
 ### On Pull Request
+
 - Runs tests, linting, and build
 - Does NOT deploy to Heroku
 
 ### On Push to Main/Master
+
 1. **Test Phase**:
    - Installs dependencies
    - Runs linter
@@ -95,6 +98,7 @@ git push heroku main
 ## Environment Variables
 
 The following environment variables are automatically set by Heroku:
+
 - `NODE_ENV=production`
 - `DATABASE_URL` (PostgreSQL connection string)
 - `JWT_SECRET` (if configured)

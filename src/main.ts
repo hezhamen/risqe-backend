@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 
 async function bootstrap() {
@@ -14,6 +15,34 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Setup Swagger/OpenAPI documentation
+  const config = new DocumentBuilder()
+    .setTitle('Risqe Backend API')
+    .setDescription('A comprehensive API for managing ROSCA (Rotating Savings and Credit Association) groups, financial transactions, and community features.')
+    .setVersion('1.0.0')
+    .addTag('Authentication', 'User authentication and phone verification')
+    .addTag('ROSCA', 'ROSCA group management and operations')
+    .addTag('Financials', 'Financial transactions and withdrawal requests')
+    .addTag('Community', 'Community posts and interactions')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs-json', app, document, {
+    jsonDocumentUrl: 'docs-json',
+    yamlDocumentUrl: 'docs-yaml',
+  });
 
   // Setup Scalar API documentation
   const scalarConfig = { 
