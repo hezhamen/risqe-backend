@@ -2,6 +2,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'postgres',
+  url: process.env.DATABASE_URL, // Heroku provides this automatically
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432', 10),
   username: process.env.DB_USER || 'postgres',
@@ -12,4 +13,5 @@ export const databaseConfig: TypeOrmModuleOptions = {
       ? ['dist/**/*.entity{.js}']
       : [__dirname + '/../**/*.entity.{ts,js}'],
   synchronize: process.env.NODE_ENV !== 'production', // Use migrations in production
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 };
