@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import * as packageJson from '../package.json';
 
 @Injectable()
 export class AppService {
   getHello(): { message: string; version: string; status: string } {
+    const packageJson = require('../package.json');
     return {
       message: 'Risqe Backend API',
       version: packageJson.version,
