@@ -1,0 +1,161 @@
+---
+description: scalar, documentation
+alwaysApply: false
+---
+
+    # NestJS Documentation Rules for Scalar
+
+    This document defines the standard syntax and best practices for writing high-quality, component-rich documentation for NestJS projects using Scalar’s Markdown extensions.
+
+    ## 1. Core Markdown & Structure
+
+    Always use standard Markdown for basic formatting.
+
+    | Element         | Syntax             | Usage                                                               |
+    | :-------------- | :----------------- | :------------------------------------------------------------------ |
+    | Heading 1       | `# Title`          | Used only once per document (the page title).                       |
+    | Heading 2       | `## Section`       | Main content sections (e.g., Installation, Controllers, Services).  |
+    | Heading 3       | `### Subsection`   | Detailed topics within a section (e.g., Injecting Dependencies).    |
+    | Bold            | `**text**`         | Highlighting file names, keywords, or command flags.                |
+    | Inline Code     | `` `code` ``      | Highlighting function names, class names, or inline commands.       |
+    | Table           | `` `Header` ``     | For structured data or comparisons.                                 |
+
+    ## 2. Code Blocks
+
+    Use standard GitHub Flavored Markdown (GFM) fencing. Always specify the language for syntax highlighting. For NestJS documentation, the primary languages are `typescript`, `bash`, and `json`.
+
+    ### Recommended Languages for NestJS
+
+    | Language Tag | Usage Example                                                 |
+    | :----------- | :------------------------------------------------------------ |
+    | `typescript` | Controller, Service, Module, DTO, or Interface files.         |
+    | `bash`       | Installation or CLI commands (e.g., `npm install`, `nest generate`). |
+    | `json`       | `package.json` snippets, JSON payloads, or mock responses.    |
+    | `yaml`       | Configuration for Docker or external services.                |
+
+    **Example (TypeScript Controller)**
+
+    Use `typescript` for component logic.
+
+    ```typescript
+    // src/items/items.controller.ts
+    import { Controller, Get } from '@nestjs/common';
+    import { ItemsService } from './items.service';
+
+    @Controller('items')
+    export class ItemsController {
+      constructor(private readonly itemsService: ItemsService) {}
+
+      @Get()
+      findAll(): string[] {
+        return this.itemsService.findAll();
+      }
+    }
+    ```
+
+    **Example (Bash CLI)**
+
+    Use `bash` for command-line instructions.
+
+    ```bash
+    # Install the NestJS CLI and create a new project
+    npm install -g @nestjs/cli
+    nest new my-nestjs-app
+    ```
+
+    ## 3. Step-by-Step Guides (Steps)
+
+    Use the `scalar-steps` container and `scalar-step` elements for tutorials, installation guides, or any sequence of actions. This creates interactive, collapsible sections.
+
+    - Container: `::::scalar-steps`
+    - Step: `:::scalar-step{ id="..." title="..." }`
+    - Static Step (Reference): Use `interactivity="none"` for steps that are purely reference or do not need to collapse.
+
+    **Example: Setting up a Database Module**
+
+    ::::scalar-steps
+    :::scalar-step{ id="step-1" title="Install the Required Package" }
+    First, install the necessary database package for your chosen ORM (e.g., TypeORM or Mongoose).
+
+    ```bash
+    npm install @nestjs/typeorm typeorm mysql2
+    ```
+    :::
+    :::scalar-step{ id="step-2" title="Configure the Root Module" }
+    Import the `TypeOrmModule` into your root `AppModule` and configure it with your database connection details.
+
+    ```typescript
+    // src/app.module.ts
+    import { Module } from '@nestjs/common';
+    import { TypeOrmModule } from '@nestjs/typeorm';
+
+    @Module({
+      imports: [
+        TypeOrmModule.forRoot({
+          type: 'mysql',
+          host: 'localhost',
+          port: 3306,
+          username: 'root',
+          password: 'password',
+          database: 'nestjs_db',
+          autoLoadEntities: true,
+          synchronize: true, // ONLY for development!
+        }),
+      ],
+    })
+    export class AppModule {}
+    ```
+    :::
+    :::scalar-step{ id="step-3" title="Start the Application" }
+    After configuration, run the application to verify the connection.
+
+    ```bash
+    npm run start:dev
+    ```
+    :::
+    ::::
+
+    ## 4. Callouts (Callouts)
+
+    Use `scalar-callout` to highlight critical information, tips, or warnings. Always specify the `type` property.
+
+    | Type      | Purpose                                                             |
+    | :-------- | :------------------------------------------------------------------ |
+    | `info`    | General tips, useful context, or standard notes. (Default)          |
+    | `success` | Confirmation of completion or positive outcome.                     |
+    | `warning` | Important caveats, things to check, or non-critical cautions.       |
+    | `danger`  | Serious warnings, security risks, or things that will cause errors. |
+    | `neutral` | Simple emphasis or background information.                          |
+
+    **Example (Danger Type for Security)**
+
+    Mandate: Use `danger` when discussing security-sensitive code (e.g., using `synchronize: true` in production).
+
+    :::scalar-callout{type="danger"}
+    Do Not Use `synchronize: true` in Production!
+    Setting `synchronize: true` can lead to data loss. This flag should only be used in a development environment. For production, use migrations to safely manage schema changes.
+    :::
+
+    **Example (Info Type for Context)**
+
+    :::scalar-callout{type="info"}
+    Tip on CLI: You can use the shorthand `nest g mo` for `nest generate module` to speed up project scaffolding.
+    :::
+
+    ## 5. Mathematical Equations (Math)
+
+    Use the `scalar-math` component to display complex equations (e.g., encryption algorithms, load balancing formulas). Equations must be written in LaTeX syntax.
+
+    **Example: Hashing Iterations**
+
+    This equation shows the relationship between complexity (\(C\)), time (\(T\)), and the number of iterations (\(I\)) in a key derivation function.
+
+    ::scalar-math{equation="C = \frac{T}{I \times H}" caption="Complexity (C) is proportional to the time limit (T) divided by the product of iterations (I) and hash function speed (H)."}
+
+    ## Best Practices Summary
+
+    -   **Code Fencing:** Always use ` ```typescript ` or ` ```bash ` for code blocks.
+    -   **Tutorials:** Use `::::scalar-steps` for all multi-step tutorials.
+    -   **Warnings:** Use `:::scalar-callout{type="danger"}` for security and production-related warnings.
+    -   **Consistency:** Use `**Bold**` for file names and `` `Inline Code` `` for symbols/class names.
+    -   **Simplicity:** Avoid complex custom HTML directives unless absolutely necessary, stick to the provided Markdown and Scalar components.
