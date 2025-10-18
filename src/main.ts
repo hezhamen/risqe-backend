@@ -39,17 +39,11 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs-json', app, document, {
-    jsonDocumentUrl: 'docs-json',
-    yamlDocumentUrl: 'docs-yaml',
-  });
-
-  // Setup Scalar API documentation
+  
+  // Setup Scalar API documentation with inline spec
   const scalarConfig = { 
     theme: 'default' as const, 
-    spec: { 
-      url: '/docs-json' 
-    } 
+    spec: document
   };
   app.use('/reference', apiReference(scalarConfig));
   
