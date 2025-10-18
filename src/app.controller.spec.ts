@@ -15,8 +15,11 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return API info', () => {
+      const result = appController.getHello();
+      expect(result).toHaveProperty('message', 'Risqe Backend API');
+      expect(result).toHaveProperty('version');
+      expect(result).toHaveProperty('status', 'running');
     });
   });
 });
