@@ -12,6 +12,6 @@ export const databaseConfig: TypeOrmModuleOptions = {
     process.env.NODE_ENV === 'production'
       ? ['dist/**/*.entity{.js}']
       : [__dirname + '/../**/*.entity.{ts,js}'],
-  synchronize: process.env.NODE_ENV !== 'production', // Use migrations in production
+  synchronize: true, // Enable for initial deployment - should use migrations in production
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 };
