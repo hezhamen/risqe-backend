@@ -21,9 +21,8 @@ export class PhoneService {
     let user = await this.userRepository.findOne({ where: { phoneNumber } });
     if (!user) {
       user = this.userRepository.create({
-        email: `${phoneNumber}@placeholder.local`,
-        passwordHash: '',
         phoneNumber,
+        passwordHash: '',
         isPhoneVerified: false,
       });
     }
@@ -122,7 +121,7 @@ export class PhoneService {
     await this.userRepository.save(user);
 
     // Issue JWT
-    const payload = { email: user.email, sub: user.id };
+    const payload = { phoneNumber: user.phoneNumber, sub: user.id };
     const access_token = this.jwtService.sign(payload);
     return { access_token };
   }

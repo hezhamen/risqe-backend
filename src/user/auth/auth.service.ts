@@ -15,12 +15,12 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{ access_token: string }> {
-    const { email, password } = registerDto;
+    const { phoneNumber, firstName, lastName, password } = registerDto;
 
     // Check if user already exists
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({ where: { phoneNumber } });
     if (existingUser) {
-      throw new ConflictException('User already exists with this email');
+      throw new ConflictException('User already exists with this phone number');
     }
 
     // Hash password
@@ -29,24 +29,26 @@ export class AuthService {
 
     // Create new user
     const newUser = this.userRepository.create({
-      email,
+      phoneNumber,
+      firstName,
+      lastName,
       passwordHash,
     });
 
     const savedUser = await this.userRepository.save(newUser);
 
     // Generate JWT token
-    const payload = { email: savedUser.email, sub: savedUser.id };
+    const payload = { phoneNumber: savedUser.phoneNumber, sub: savedUser.id };
     const access_token = this.jwtService.sign(payload);
 
     return { access_token };
   }
 
   async login(loginDto: LoginDto): Promise<{ access_token: string }> {
-    const { email, password } = loginDto;
+    const { phoneNumber, password } = loginDto;
 
-    // Find user by email
-    const user = await this.userRepository.findOne({ where: { email } });
+    // Find user by phone number
+    const user = await this.userRepository.findOne({ where: { phoneNumber } });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -58,13 +60,13 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { email: user.email, sub: user.id };
+    const payload = { phoneNumber: user.phoneNumber, sub: user.id };
     const access_token = this.jwtService.sign(payload);
 
     return { access_token };
   }
 
-  async validateUser(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({ where: { email } });
+  async validateUser(phoneNumber: string): Promise<User | null> {
+    return await this.userRepository.findOne({ where: { phoneNumber } });
   }
 }

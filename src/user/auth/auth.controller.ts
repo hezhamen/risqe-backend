@@ -11,7 +11,7 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ 
     summary: 'Register a new user',
-    description: 'Create a new user account with email and password'
+    description: 'Create a new user account with phone number, first name, last name, and password'
   })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({ 
@@ -33,7 +33,7 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ 
     summary: 'Login user',
-    description: 'Authenticate user with email and password'
+    description: 'Authenticate user with phone number and password'
   })
   @ApiBody({ type: LoginDto })
   @ApiResponse({ 

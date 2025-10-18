@@ -6,11 +6,17 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  email: string;
-
   @Column({ type: 'varchar', unique: true, nullable: true })
-  phoneNumber?: string | null;
+  email?: string | null;
+
+  @Column({ type: 'varchar', unique: true })
+  phoneNumber: string;
+
+  @Column({ type: 'varchar' })
+  firstName: string;
+
+  @Column({ type: 'varchar' })
+  lastName: string;
 
   @Column()
   passwordHash: string; // Stored securely after hashing
