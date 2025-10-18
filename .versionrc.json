@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "preversion": "npm run test && npm run build",
+    "version": "git add package.json && git commit -m \"chore: bump version to %s\"",
+    "postversion": "git push && git push --tags"
+  },
+  "commitAll": true,
+  "tagPrefix": "v",
+  "sign": false,
+  "message": "chore: bump version to %s"
+}
