@@ -43,6 +43,6 @@ export class User {
   namabarVerificationId?: string | null;
 
   // Relationships (e.g., membership in ROSCA groups)
-  @OneToMany(() => GroupMember, member => member.user)
+  @OneToMany(() => GroupMember, (member) => member.user)
   groupMemberships: GroupMember[];
 }

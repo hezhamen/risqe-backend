@@ -8,10 +8,7 @@ import { RoscaService } from './rosca/rosca.service';
 import { RoscaController } from './rosca/rosca.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Group, GroupMember, User]),
-    UserModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Group, GroupMember, User]), UserModule],
   providers: [RoscaService],
   controllers: [RoscaController],
   exports: [RoscaService],

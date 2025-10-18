@@ -6,7 +6,7 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -19,7 +19,9 @@ async function bootstrap() {
   // Setup Swagger/OpenAPI documentation
   const config = new DocumentBuilder()
     .setTitle('Risqe Backend API')
-    .setDescription('A comprehensive API for managing ROSCA (Rotating Savings and Credit Association) groups, financial transactions, and community features.')
+    .setDescription(
+      'A comprehensive API for managing ROSCA (Rotating Savings and Credit Association) groups, financial transactions, and community features.',
+    )
     .setVersion('1.0.0')
     .addTag('Authentication', 'User authentication and phone verification')
     .addTag('ROSCA', 'ROSCA group management and operations')
@@ -39,13 +41,16 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  
+
   // Setup Scalar API documentation with inline content
-  app.use('/reference', apiReference({
-    theme: 'default' as const,
-    content: document,
-  }));
-  
+  app.use(
+    '/reference',
+    apiReference({
+      theme: 'default' as const,
+      content: document,
+    }),
+  );
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}`);

@@ -4,7 +4,11 @@ import { Repository } from 'typeorm';
 import { Post } from '../post.entity';
 import { Comment } from '../comment.entity';
 import { User } from '../../user/user.entity';
-import { CreatePostDto, CreateCommentDto, UpdatePostDto } from '../dto/community.dto';
+import {
+  CreatePostDto,
+  CreateCommentDto,
+  UpdatePostDto,
+} from '../dto/community.dto';
 
 @Injectable()
 export class CommunityService {
@@ -17,7 +21,10 @@ export class CommunityService {
     private userRepository: Repository<User>,
   ) {}
 
-  async createPost(userId: string, createPostDto: CreatePostDto): Promise<Post> {
+  async createPost(
+    userId: string,
+    createPostDto: CreatePostDto,
+  ): Promise<Post> {
     // Verify user exists
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -32,7 +39,11 @@ export class CommunityService {
     return await this.postRepository.save(post);
   }
 
-  async updatePost(postId: string, userId: string, updatePostDto: UpdatePostDto): Promise<Post> {
+  async updatePost(
+    postId: string,
+    userId: string,
+    updatePostDto: UpdatePostDto,
+  ): Promise<Post> {
     const post = await this.postRepository.findOne({ where: { id: postId } });
     if (!post) {
       throw new NotFoundException('Post not found');
@@ -63,7 +74,11 @@ export class CommunityService {
     await this.postRepository.remove(post);
   }
 
-  async addComment(postId: string, userId: string, createCommentDto: CreateCommentDto): Promise<Comment> {
+  async addComment(
+    postId: string,
+    userId: string,
+    createCommentDto: CreateCommentDto,
+  ): Promise<Comment> {
     // Verify post exists
     const post = await this.postRepository.findOne({ where: { id: postId } });
     if (!post) {
@@ -92,7 +107,7 @@ export class CommunityService {
     });
 
     // Aggregate posts with author credit scores
-    return posts.map(post => ({
+    return posts.map((post) => ({
       ...post,
       authorCreditScore: post.user.creditScore,
     }));
@@ -112,7 +127,7 @@ export class CommunityService {
     const postWithCreditScores = {
       ...post,
       authorCreditScore: post.user.creditScore,
-      comments: post.comments.map(comment => ({
+      comments: post.comments.map((comment) => ({
         ...comment,
         authorCreditScore: comment.user.creditScore,
       })),
@@ -142,7 +157,9 @@ export class CommunityService {
   }
 
   async likeComment(commentId: string): Promise<Comment> {
-    const comment = await this.commentRepository.findOne({ where: { id: commentId } });
+    const comment = await this.commentRepository.findOne({
+      where: { id: commentId },
+    });
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }
@@ -152,7 +169,9 @@ export class CommunityService {
   }
 
   async dislikeComment(commentId: string): Promise<Comment> {
-    const comment = await this.commentRepository.findOne({ where: { id: commentId } });
+    const comment = await this.commentRepository.findOne({
+      where: { id: commentId },
+    });
     if (!comment) {
       throw new NotFoundException('Comment not found');
     }

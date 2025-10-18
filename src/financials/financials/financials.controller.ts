@@ -1,7 +1,25 @@
-import { Controller, Post, Get, Body, Param, ValidationPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  ValidationPipe,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { FinancialsService } from './financials.service';
-import { CreateWithdrawalRequestDto, ProcessTransactionDto } from '../dto/financial.dto';
+import {
+  CreateWithdrawalRequestDto,
+  ProcessTransactionDto,
+} from '../dto/financial.dto';
 import { JwtAuthGuard } from '../../user/auth/jwt-auth.guard';
 import { GetUser } from '../../user/auth/get-user.decorator';
 
@@ -13,23 +31,27 @@ export class FinancialsController {
   constructor(private readonly financialsService: FinancialsService) {}
 
   @Post('withdrawals')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create withdrawal request',
-    description: 'Create a new withdrawal request for the authenticated user'
+    description: 'Create a new withdrawal request for the authenticated user',
   })
   @ApiBody({ type: CreateWithdrawalRequestDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Withdrawal request created successfully',
     schema: {
       type: 'object',
       properties: {
         id: { type: 'string', example: 'uuid-string' },
-        amount: { type: 'number', example: 25.00 },
-        status: { type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED'], example: 'PENDING' },
-        createdAt: { type: 'string', format: 'date-time' }
-      }
-    }
+        amount: { type: 'number', example: 25.0 },
+        status: {
+          type: 'string',
+          enum: ['PENDING', 'APPROVED', 'REJECTED'],
+          example: 'PENDING',
+        },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -37,30 +59,33 @@ export class FinancialsController {
     @GetUser() user: any,
     @Body(ValidationPipe) createWithdrawalDto: CreateWithdrawalRequestDto,
   ) {
-    return this.financialsService.createWithdrawalRequest(user.id, createWithdrawalDto);
+    return this.financialsService.createWithdrawalRequest(
+      user.id,
+      createWithdrawalDto,
+    );
   }
 
   @Post('withdrawals/:id/process')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Process withdrawal request',
-    description: 'Process a withdrawal request (approve or reject)'
+    description: 'Process a withdrawal request (approve or reject)',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'Withdrawal request ID',
-    example: 'uuid-string'
+    example: 'uuid-string',
   })
   @ApiBody({ type: ProcessTransactionDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Withdrawal request processed successfully',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Withdrawal request processed' }
-      }
-    }
+        message: { type: 'string', example: 'Withdrawal request processed' },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -69,16 +94,19 @@ export class FinancialsController {
     @Param('id') withdrawalId: string,
     @Body(ValidationPipe) processTransactionDto: ProcessTransactionDto,
   ) {
-    return this.financialsService.processWithdrawalRequest(withdrawalId, processTransactionDto);
+    return this.financialsService.processWithdrawalRequest(
+      withdrawalId,
+      processTransactionDto,
+    );
   }
 
   @Get('withdrawals')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get user withdrawal requests',
-    description: 'Retrieve all withdrawal requests for the authenticated user'
+    description: 'Retrieve all withdrawal requests for the authenticated user',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'List of user withdrawal requests',
     schema: {
       type: 'array',
@@ -86,13 +114,17 @@ export class FinancialsController {
         type: 'object',
         properties: {
           id: { type: 'string', example: 'uuid-string' },
-          amount: { type: 'number', example: 25.00 },
-          status: { type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED'], example: 'PENDING' },
+          amount: { type: 'number', example: 25.0 },
+          status: {
+            type: 'string',
+            enum: ['PENDING', 'APPROVED', 'REJECTED'],
+            example: 'PENDING',
+          },
           paymentMethod: { type: 'string', example: 'BANK_TRANSFER' },
-          createdAt: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUserWithdrawalRequests(@GetUser() user: any) {
@@ -100,12 +132,13 @@ export class FinancialsController {
   }
 
   @Get('transactions')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get user transactions',
-    description: 'Retrieve all financial transactions for the authenticated user'
+    description:
+      'Retrieve all financial transactions for the authenticated user',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'List of user transactions',
     schema: {
       type: 'array',
@@ -113,13 +146,21 @@ export class FinancialsController {
         type: 'object',
         properties: {
           id: { type: 'string', example: 'uuid-string' },
-          amount: { type: 'number', example: 25.00 },
-          type: { type: 'string', enum: ['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'], example: 'DEPOSIT' },
-          status: { type: 'string', enum: ['PENDING', 'COMPLETED', 'FAILED'], example: 'COMPLETED' },
-          createdAt: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
+          amount: { type: 'number', example: 25.0 },
+          type: {
+            type: 'string',
+            enum: ['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'],
+            example: 'DEPOSIT',
+          },
+          status: {
+            type: 'string',
+            enum: ['PENDING', 'COMPLETED', 'FAILED'],
+            example: 'COMPLETED',
+          },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUserTransactions(@GetUser() user: any) {

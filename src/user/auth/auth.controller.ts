@@ -9,20 +9,24 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Register a new user',
-    description: 'Create a new user account with phone number, first name, last name, and password'
+    description:
+      'Create a new user account with phone number, first name, last name, and password',
   })
   @ApiBody({ type: RegisterDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User successfully registered',
     schema: {
       type: 'object',
       properties: {
-        access_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
-      }
-    }
+        access_token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiResponse({ status: 409, description: 'User already exists' })
@@ -31,20 +35,23 @@ export class AuthController {
   }
 
   @Post('login')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Login user',
-    description: 'Authenticate user with phone number and password'
+    description: 'Authenticate user with phone number and password',
   })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'User successfully authenticated',
     schema: {
       type: 'object',
       properties: {
-        access_token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
-      }
-    }
+        access_token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body(ValidationPipe) loginDto: LoginDto) {

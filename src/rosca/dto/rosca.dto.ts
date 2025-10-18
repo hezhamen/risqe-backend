@@ -5,7 +5,7 @@ export class CreateGroupDto {
   @ApiProperty({
     description: 'Name of the ROSCA group',
     example: 'Alpha Circle',
-    minLength: 1
+    minLength: 1,
   })
   @IsString()
   @IsNotEmpty()
@@ -14,7 +14,7 @@ export class CreateGroupDto {
   @ApiProperty({
     description: 'Total fund target amount for the ROSCA group',
     example: 1000,
-    minimum: 0
+    minimum: 0,
   })
   @IsNumber()
   @Min(0)
@@ -24,7 +24,7 @@ export class CreateGroupDto {
 export class JoinGroupDto {
   @ApiProperty({
     description: 'Unique identifier of the ROSCA group to join',
-    example: 'uuid-string'
+    example: 'uuid-string',
   })
   @IsString()
   @IsNotEmpty()

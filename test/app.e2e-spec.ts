@@ -14,7 +14,9 @@ describe('App (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 
@@ -62,7 +64,11 @@ describe('App (e2e)', () => {
     await request(app.getHttpServer())
       .post('/financials/withdrawals')
       .set('Authorization', `Bearer ${token}`)
-      .send({ amount: 0, paymentMethod: 'BANK_TRANSFER', paymentDetails: JSON.stringify({ iban: 'DE...' }) })
+      .send({
+        amount: 0,
+        paymentMethod: 'BANK_TRANSFER',
+        paymentDetails: JSON.stringify({ iban: 'DE...' }),
+      })
       .expect(201);
 
     await request(app.getHttpServer())

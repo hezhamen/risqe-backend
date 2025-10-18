@@ -5,7 +5,7 @@ export class RequestOtpDto {
   @ApiProperty({
     description: 'Phone number in international format',
     example: '+9647721270202',
-    pattern: '^\\+[1-9]\\d{1,14}$'
+    pattern: '^\\+[1-9]\\d{1,14}$',
   })
   @IsPhoneNumber()
   @IsNotEmpty()
@@ -16,7 +16,7 @@ export class VerifyOtpDto {
   @ApiProperty({
     description: 'Phone number in international format',
     example: '+9647721270202',
-    pattern: '^\\+[1-9]\\d{1,14}$'
+    pattern: '^\\+[1-9]\\d{1,14}$',
   })
   @IsPhoneNumber()
   @IsNotEmpty()
@@ -26,11 +26,9 @@ export class VerifyOtpDto {
     description: 'OTP verification code',
     example: '123456',
     minLength: 4,
-    maxLength: 8
+    maxLength: 8,
   })
   @IsString()
   @Length(4, 8)
   code: string;
 }
-
-

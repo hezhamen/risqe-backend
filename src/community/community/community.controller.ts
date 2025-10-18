@@ -1,6 +1,20 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, ValidationPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ValidationPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { CommunityService } from './community.service';
-import { CreatePostDto, CreateCommentDto, UpdatePostDto } from '../dto/community.dto';
+import {
+  CreatePostDto,
+  CreateCommentDto,
+  UpdatePostDto,
+} from '../dto/community.dto';
 import { JwtAuthGuard } from '../../user/auth/jwt-auth.guard';
 import { GetUser } from '../../user/auth/get-user.decorator';
 
@@ -10,7 +24,10 @@ export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}
 
   @Post('posts')
-  async createPost(@GetUser() user: any, @Body(ValidationPipe) createPostDto: CreatePostDto) {
+  async createPost(
+    @GetUser() user: any,
+    @Body(ValidationPipe) createPostDto: CreatePostDto,
+  ) {
     return this.communityService.createPost(user.id, createPostDto);
   }
 

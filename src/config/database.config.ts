@@ -15,7 +15,18 @@ export const databaseConfig: TypeOrmModuleOptions = {
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'risqe_db',
-  entities: [User, Group, GroupMember, Post, Comment, GroupTransaction, WithdrawalRequest],
+  entities: [
+    User,
+    Group,
+    GroupMember,
+    Post,
+    Comment,
+    GroupTransaction,
+    WithdrawalRequest,
+  ],
   synchronize: true, // Enable for initial deployment - should use migrations in production
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
 };

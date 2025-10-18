@@ -4,8 +4,8 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateWithdrawalRequestDto {
   @ApiProperty({
     description: 'Amount to withdraw',
-    example: 25.00,
-    minimum: 0
+    example: 25.0,
+    minimum: 0,
   })
   @IsNumber()
   @Min(0)
@@ -14,15 +14,17 @@ export class CreateWithdrawalRequestDto {
   @ApiProperty({
     description: 'Payment method for withdrawal',
     example: 'BANK_TRANSFER',
-    enum: ['BANK_TRANSFER', 'CASH', 'MOBILE_MONEY']
+    enum: ['BANK_TRANSFER', 'CASH', 'MOBILE_MONEY'],
   })
   @IsString()
   @IsNotEmpty()
   paymentMethod: string;
 
   @ApiProperty({
-    description: 'Payment details (JSON string with method-specific information)',
-    example: '{"iban": "DE89 3704 0044 0532 0130 00", "accountName": "John Doe"}'
+    description:
+      'Payment details (JSON string with method-specific information)',
+    example:
+      '{"iban": "DE89 3704 0044 0532 0130 00", "accountName": "John Doe"}',
   })
   @IsString()
   @IsNotEmpty()
@@ -32,7 +34,7 @@ export class CreateWithdrawalRequestDto {
 export class ProcessTransactionDto {
   @ApiProperty({
     description: 'Transaction ID to process',
-    example: 'uuid-string'
+    example: 'uuid-string',
   })
   @IsString()
   @IsNotEmpty()
@@ -41,7 +43,7 @@ export class ProcessTransactionDto {
   @ApiProperty({
     description: 'Transaction status',
     example: 'COMPLETED',
-    enum: ['COMPLETED', 'FAILED']
+    enum: ['COMPLETED', 'FAILED'],
   })
   @IsString()
   @IsNotEmpty()
@@ -51,7 +53,7 @@ export class ProcessTransactionDto {
   @ApiProperty({
     description: 'External transaction ID (optional)',
     example: 'ext_txn_123456',
-    required: false
+    required: false,
   })
   @IsString()
   externalTransactionId?: string;
@@ -59,7 +61,7 @@ export class ProcessTransactionDto {
   @ApiProperty({
     description: 'Failure reason (required if status is FAILED)',
     example: 'Insufficient funds',
-    required: false
+    required: false,
   })
   @IsString()
   failureReason?: string;

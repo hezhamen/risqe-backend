@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Group } from './group.entity';
 import { User } from '../user/user.entity';
 
@@ -26,7 +32,7 @@ export class GroupMember {
   totalReceived: number;
 
   // Relationships
-  @ManyToOne(() => Group, group => group.members, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Group, (group) => group.members, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'groupId' })
   group: Group;
 

@@ -39,38 +39,63 @@ async function bootstrap() {
   let group = await groupRepo.findOne({ where: { name: 'Alpha Circle' } });
   if (!group) {
     group = await groupRepo.save(
-      groupRepo.create({ name: 'Alpha Circle', totalFundTarget: 1000, adminUserId: admin.id }),
+      groupRepo.create({
+        name: 'Alpha Circle',
+        totalFundTarget: 1000,
+        adminUserId: admin.id,
+      }),
     );
     await memberRepo.save(
-      memberRepo.create({ groupId: group.id, userId: admin.id, is_admin: true, status: 'ACTIVE' }),
+      memberRepo.create({
+        groupId: group.id,
+        userId: admin.id,
+        is_admin: true,
+        status: 'ACTIVE',
+      }),
     );
   }
 
   // Create sample post & comment
   const post = await postRepo.save(
-    postRepo.create({ userId: admin.id, title: 'Welcome', content: 'Hello Risqe!' }),
+    postRepo.create({
+      userId: admin.id,
+      title: 'Welcome',
+      content: 'Hello Risqe!',
+    }),
   );
   await commentRepo.save(
-    commentRepo.create({ postId: post.id, userId: admin.id, content: 'First comment' }),
+    commentRepo.create({
+      postId: post.id,
+      userId: admin.id,
+      content: 'First comment',
+    }),
   );
 
   // Seed a pending withdrawal request
   await withdrawalRepo.save(
-    withdrawalRepo.create({ userId: admin.id, amount: 25, paymentMethod: 'BANK_TRANSFER', paymentDetails: JSON.stringify({ iban: 'DE89 3704 0044 0532 0130 00' }) }),
+    withdrawalRepo.create({
+      userId: admin.id,
+      amount: 25,
+      paymentMethod: 'BANK_TRANSFER',
+      paymentDetails: JSON.stringify({ iban: 'DE89 3704 0044 0532 0130 00' }),
+    }),
   );
 
   // Seed a contribution transaction
   await txRepo.save(
-    txRepo.create({ userId: admin.id, groupId: group.id, amount: 50, type: 'CONTRIBUTION', status: 'COMPLETED' }),
+    txRepo.create({
+      userId: admin.id,
+      groupId: group.id,
+      amount: 50,
+      type: 'CONTRIBUTION',
+      status: 'COMPLETED',
+    }),
   );
 
   await app.close();
 }
 
 bootstrap().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err);
   process.exit(1);
 });
-
-

@@ -1,4 +1,9 @@
-import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
@@ -6,7 +11,10 @@ import { firstValueFrom } from 'rxjs';
 import { GroupTransaction } from '../group-transaction.entity';
 import { WithdrawalRequest } from '../withdrawal-request.entity';
 import { User } from '../../user/user.entity';
-import { CreateWithdrawalRequestDto, ProcessTransactionDto } from '../dto/financial.dto';
+import {
+  CreateWithdrawalRequestDto,
+  ProcessTransactionDto,
+} from '../dto/financial.dto';
 
 @Injectable()
 export class FinancialsService {
@@ -69,11 +77,13 @@ export class FinancialsService {
 
       // Update withdrawal request status
       withdrawalRequest.status = processTransactionDto.status;
-      withdrawalRequest.externalTransactionId = processTransactionDto.externalTransactionId || null;
+      withdrawalRequest.externalTransactionId =
+        processTransactionDto.externalTransactionId || null;
       withdrawalRequest.processedAt = new Date();
 
       if (processTransactionDto.status === 'FAILED') {
-        withdrawalRequest.failureReason = processTransactionDto.failureReason || null;
+        withdrawalRequest.failureReason =
+          processTransactionDto.failureReason || null;
       } else if (processTransactionDto.status === 'COMPLETED') {
         // Deduct from user balance if successful
         await this.userRepository.decrement(
@@ -89,7 +99,9 @@ export class FinancialsService {
     }
   }
 
-  async getUserWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]> {
+  async getUserWithdrawalRequests(
+    userId: string,
+  ): Promise<WithdrawalRequest[]> {
     return await this.withdrawalRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
@@ -125,7 +137,8 @@ export class FinancialsService {
       // );
 
       // For demo purposes, we'll simulate success/failure
-      if (Math.random() > 0.1) { // 90% success rate
+      if (Math.random() > 0.1) {
+        // 90% success rate
         return {
           success: true,
           transactionId: `ext_${Date.now()}`,

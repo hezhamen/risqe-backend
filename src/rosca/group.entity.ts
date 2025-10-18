@@ -19,6 +19,6 @@ export class Group {
   currentPeriod: number;
 
   // Relationships
-  @OneToMany(() => GroupMember, member => member.group)
+  @OneToMany(() => GroupMember, (member) => member.group)
   members: GroupMember[];
 }

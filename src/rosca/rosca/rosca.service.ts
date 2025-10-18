@@ -1,4 +1,9 @@
-import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Group } from '../group.entity';
@@ -18,9 +23,14 @@ export class RoscaService {
     private dataSource: DataSource, // Injecting DataSource for transactions
   ) {}
 
-  async createGroup(adminId: string, createGroupDto: CreateGroupDto): Promise<Group> {
+  async createGroup(
+    adminId: string,
+    createGroupDto: CreateGroupDto,
+  ): Promise<Group> {
     // Verify admin user exists
-    const adminUser = await this.userRepository.findOne({ where: { id: adminId } });
+    const adminUser = await this.userRepository.findOne({
+      where: { id: adminId },
+    });
     if (!adminUser) {
       throw new BadRequestException('Admin user not found');
     }
@@ -46,18 +56,23 @@ export class RoscaService {
     });
   }
 
-  async joinGroup(userId: string, joinGroupDto: JoinGroupDto): Promise<GroupMember> {
+  async joinGroup(
+    userId: string,
+    joinGroupDto: JoinGroupDto,
+  ): Promise<GroupMember> {
     const { groupId } = joinGroupDto;
 
     // Verify group exists
-    const group = await this.groupRepository.findOne({ where: { id: groupId } });
+    const group = await this.groupRepository.findOne({
+      where: { id: groupId },
+    });
     if (!group) {
       throw new NotFoundException('Group not found');
     }
 
     // Check if user is already a member
     const existingMembership = await this.memberRepository.findOne({
-      where: { groupId, userId }
+      where: { groupId, userId },
     });
     if (existingMembership) {
       throw new BadRequestException('User is already a member of this group');
@@ -80,7 +95,7 @@ export class RoscaService {
       relations: ['group'],
     });
 
-    return memberships.map(membership => membership.group);
+    return memberships.map((membership) => membership.group);
   }
 
   async getGroupMembers(groupId: string): Promise<GroupMember[]> {

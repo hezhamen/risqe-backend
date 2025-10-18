@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { User } from '../user/user.entity';
 import { Comment } from './comment.entity';
 
@@ -25,7 +32,11 @@ export class Post {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
   updatedAt: Date;
 
   // Relationships
@@ -33,6 +44,6 @@ export class Post {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @OneToMany(() => Comment, comment => comment.post)
+  @OneToMany(() => Comment, (comment) => comment.post)
   comments: Comment[];
 }
