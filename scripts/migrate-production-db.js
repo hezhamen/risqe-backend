@@ -20,8 +20,8 @@ async function migrateProductionDatabase() {
     await client.connect();
     console.log('✅ Connected to production database');
 
-    // First, let's see what users we have
-    const result = await client.query('SELECT id, email, "phoneNumber", "firstName", "lastName" FROM users LIMIT 5');
+    // First, let's see what users we have (without firstName/lastName for now)
+    const result = await client.query('SELECT id, email, "phoneNumber" FROM users LIMIT 5');
     console.log('📊 Current users (sample):', result.rows);
 
     // Add firstName and lastName columns if they don't exist
