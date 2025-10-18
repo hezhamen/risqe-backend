@@ -27,6 +27,8 @@ export class PhoneService {
     if (!user) {
       user = this.userRepository.create({
         phoneNumber,
+        firstName: 'User',
+        lastName: 'Name',
         passwordHash: '',
         isPhoneVerified: false,
       });
