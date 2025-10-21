@@ -1,7 +1,8 @@
-import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, ValidationPipe, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, InitiateRegisterDto } from '../dto/auth.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -91,5 +92,35 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body(ValidationPipe) loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get user profile',
+    description: 'Get the authenticated user profile information',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'ce17af98-8628-44f4-aac6-dc42113d5ce1' },
+        phoneNumber: { type: 'string', example: '+9647721270202' },
+        firstName: { type: 'string', example: 'Test' },
+        lastName: { type: 'string', example: 'User' },
+        email: { type: 'string', example: 'test@example.com', nullable: true },
+        internalBalance: { type: 'number', example: 0.0 },
+        pointsBalance: { type: 'number', example: 0 },
+        creditScore: { type: 'number', example: 500 },
+        isPhoneVerified: { type: 'boolean', example: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid or missing token' })
+  async getProfile(@Request() req) {
+    return this.authService.getProfile(req.user.phoneNumber);
   }
 }

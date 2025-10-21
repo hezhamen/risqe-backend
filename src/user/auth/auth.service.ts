@@ -127,4 +127,33 @@ export class AuthService {
   async validateUser(phoneNumber: string): Promise<User | null> {
     return await this.userRepository.findOne({ where: { phoneNumber } });
   }
+
+  async getProfile(phoneNumber: string): Promise<{
+    id: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    email?: string | null;
+    internalBalance: number;
+    pointsBalance: number;
+    creditScore: number;
+    isPhoneVerified: boolean;
+  }> {
+    const user = await this.userRepository.findOne({ where: { phoneNumber } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      internalBalance: user.internalBalance,
+      pointsBalance: user.pointsBalance,
+      creditScore: user.creditScore,
+      isPhoneVerified: user.isPhoneVerified,
+    };
+  }
 }
