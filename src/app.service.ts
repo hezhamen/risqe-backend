@@ -57,10 +57,23 @@ export class AppService {
         'group',
         'users',
       ];
+      
       for (const table of tables) {
-        await queryRunner.query(`DELETE FROM "${table}"`);
-        tablesCleared.push(table);
+        // Check if table exists before trying to delete from it
+        const tableExists = await queryRunner.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = $1
+          );
+        `, [table]);
+        
+        if (tableExists[0].exists) {
+          await queryRunner.query(`DELETE FROM "${table}"`);
+          tablesCleared.push(table);
+        }
       }
+      
       await queryRunner.commitTransaction();
       return {
         message: 'Database wiped successfully',
