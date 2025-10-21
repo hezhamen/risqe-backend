@@ -8,7 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../user.entity';
-import { RegisterDto, LoginDto } from '../dto/auth.dto';
+import { RegisterDto, LoginDto, InitiateRegisterDto } from '../dto/auth.dto';
+import { PhoneService } from '../phone/phone.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly phoneService: PhoneService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{ access_token: string }> {
@@ -48,6 +50,56 @@ export class AuthService {
     const access_token = this.jwtService.sign(payload);
 
     return { access_token };
+  }
+
+  async initiateRegistration(initiateRegisterDto: InitiateRegisterDto): Promise<{
+    success: boolean;
+    phoneNumber: string;
+    provider?: 'namabar' | 'dev';
+    verificationId?: string;
+    devCode?: string;
+  }> {
+    const { phoneNumber, firstName, lastName, password } = initiateRegisterDto;
+
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({
+      where: { phoneNumber },
+    });
+
+    if (existingUser && existingUser.isPhoneVerified) {
+      throw new ConflictException('User already exists with this phone number');
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    let user: User;
+    if (existingUser) {
+      // Update existing unverified user
+      existingUser.firstName = firstName;
+      existingUser.lastName = lastName;
+      existingUser.passwordHash = passwordHash;
+      user = await this.userRepository.save(existingUser);
+    } else {
+      // Create new unverified user
+      const newUser = this.userRepository.create({
+        phoneNumber,
+        firstName,
+        lastName,
+        passwordHash,
+        isPhoneVerified: false,
+      });
+      user = await this.userRepository.save(newUser);
+    }
+
+    // Send OTP
+    const otpResult = await this.phoneService.requestOtp(phoneNumber);
+
+    return {
+      phoneNumber,
+      ...otpResult,
+    };
   }
 
   async login(loginDto: LoginDto): Promise<{ access_token: string }> {

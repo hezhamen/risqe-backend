@@ -23,15 +23,9 @@ export class PhoneService {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    let user = await this.userRepository.findOne({ where: { phoneNumber } });
+    const user = await this.userRepository.findOne({ where: { phoneNumber } });
     if (!user) {
-      user = this.userRepository.create({
-        phoneNumber,
-        firstName: 'User',
-        lastName: 'Name',
-        passwordHash: '',
-        isPhoneVerified: false,
-      });
+      throw new BadRequestException('User not found. Please initiate registration first.');
     }
 
     user.phoneOtpCode = code;

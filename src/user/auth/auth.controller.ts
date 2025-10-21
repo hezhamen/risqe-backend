@@ -1,7 +1,7 @@
 import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from '../dto/auth.dto';
+import { RegisterDto, LoginDto, InitiateRegisterDto } from '../dto/auth.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -32,6 +32,41 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'User already exists' })
   async register(@Body(ValidationPipe) registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('register/initiate')
+  @ApiOperation({
+    summary: 'Initiate user registration with OTP',
+    description:
+      'Create an unverified user account and send OTP for phone verification',
+  })
+  @ApiBody({ type: InitiateRegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration initiated successfully, OTP sent',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        phoneNumber: { type: 'string', example: '+9647721270202' },
+        provider: {
+          type: 'string',
+          enum: ['namabar', 'dev'],
+          example: 'namabar',
+        },
+        verificationId: { type: 'string', example: '68f389fe7c3e004536e0efb0' },
+        devCode: {
+          type: 'string',
+          example: '123456',
+          description: 'Only returned in development mode',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiResponse({ status: 409, description: 'User already exists with verified phone' })
+  async initiateRegistration(@Body(ValidationPipe) initiateRegisterDto: InitiateRegisterDto) {
+    return this.authService.initiateRegistration(initiateRegisterDto);
   }
 
   @Post('login')
