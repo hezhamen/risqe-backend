@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { databaseConfig } from './config/database.config';
 import { UserModule } from './user/user.module';
+import { User } from './user/user.entity';
 import { RoscaModule } from './rosca/rosca.module';
 import { FinancialsModule } from './financials/financials.module';
 import { CommunityModule } from './community/community.module';
@@ -20,6 +21,7 @@ import { RedeemModule } from './redeem/redeem.module';
     }),
     // Load configuration and connect to database
     TypeOrmModule.forRoot(databaseConfig),
+    TypeOrmModule.forFeature([User]),
     UserModule,
     RoscaModule,
     FinancialsModule,

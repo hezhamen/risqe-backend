@@ -1,4 +1,4 @@
-import { Controller, Get, Delete } from '@nestjs/common';
+import { Controller, Get, Delete, Post } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 
@@ -55,5 +55,31 @@ export class AppController {
   })
   async wipeDatabase() {
     return this.appService.wipeDatabase();
+  }
+
+  @Post('admin/seed-users')
+  @ApiOperation({
+    summary: 'Seed 10 Kurdish users (Admin only)',
+    description:
+      'Create 10 random Kurdish user accounts with randomized data. User data including passwords will be saved to seeded-users.yaml file.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Users seeded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Users seeded successfully' },
+        usersCreated: { type: 'number', example: 10 },
+        yamlFile: { type: 'string', example: '/path/to/seeded-users.yaml' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - only allowed in development mode',
+  })
+  async seedUsers() {
+    return this.appService.seedUsers();
   }
 }
