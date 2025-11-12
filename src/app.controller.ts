@@ -82,4 +82,49 @@ export class AppController {
   async seedUsers() {
     return this.appService.seedUsers();
   }
+
+  @Get('admin/users')
+  @ApiOperation({
+    summary: 'Get all users (Admin only)',
+    description: 'Retrieve a list of all users in the system with their profile information.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all users',
+    schema: {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              firstName: { type: 'string', example: 'Aram' },
+              lastName: { type: 'string', example: 'Hassan' },
+              email: {
+                type: 'string',
+                example: 'aram.hassan@example.com',
+                nullable: true,
+              },
+              phoneNumber: { type: 'string', example: '+9647501234567' },
+              internalBalance: { type: 'number', example: 500000 },
+              pointsBalance: { type: 'number', example: 5000 },
+              creditScore: { type: 'number', example: 650 },
+              isPhoneVerified: { type: 'boolean', example: true },
+              photoUrl: {
+                type: 'string',
+                example: 'https://example.com/photo.jpg',
+                nullable: true,
+              },
+            },
+          },
+        },
+        total: { type: 'number', example: 10 },
+      },
+    },
+  })
+  async getAllUsers() {
+    return this.appService.getAllUsers();
+  }
 }

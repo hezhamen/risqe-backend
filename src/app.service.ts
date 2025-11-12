@@ -244,4 +244,42 @@ export class AppService {
       yamlFile: yamlFilePath,
     };
   }
+
+  async getAllUsers(): Promise<{
+    users: Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phoneNumber: string;
+      internalBalance: number;
+      pointsBalance: number;
+      creditScore: number;
+      isPhoneVerified: boolean;
+      photoUrl: string | null;
+    }>;
+    total: number;
+  }> {
+    const users = await this.userRepository.find({
+      order: { firstName: 'ASC' },
+    });
+
+    const formattedUsers = users.map((user) => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email || null,
+      phoneNumber: user.phoneNumber,
+      internalBalance: user.internalBalance,
+      pointsBalance: user.pointsBalance,
+      creditScore: user.creditScore,
+      isPhoneVerified: user.isPhoneVerified,
+      photoUrl: user.photoUrl || null,
+    }));
+
+    return {
+      users: formattedUsers,
+      total: formattedUsers.length,
+    };
+  }
 }
