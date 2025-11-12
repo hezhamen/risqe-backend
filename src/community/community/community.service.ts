@@ -24,7 +24,7 @@ export class CommunityService {
   async createPost(
     userId: string,
     createPostDto: CreatePostDto,
-  ): Promise<Post> {
+  ): Promise<any> {
     // Verify user exists
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -36,7 +36,20 @@ export class CommunityService {
       ...createPostDto,
     });
 
-    return await this.postRepository.save(post);
+    const savedPost = await this.postRepository.save(post);
+
+    // Return post with author information
+    return {
+      ...savedPost,
+      author: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        photoUrl: user.photoUrl,
+        creditScore: user.creditScore,
+      },
+    };
   }
 
   async updatePost(
@@ -106,10 +119,17 @@ export class CommunityService {
       relations: ['user'],
     });
 
-    // Aggregate posts with author credit scores
+    // Aggregate posts with author information
     return posts.map((post) => ({
       ...post,
-      authorCreditScore: post.user.creditScore,
+      author: {
+        id: post.user.id,
+        firstName: post.user.firstName,
+        lastName: post.user.lastName,
+        email: post.user.email,
+        photoUrl: post.user.photoUrl,
+        creditScore: post.user.creditScore,
+      },
     }));
   }
 
@@ -123,17 +143,31 @@ export class CommunityService {
       throw new NotFoundException('Post not found');
     }
 
-    // Aggregate post and comments with credit scores
-    const postWithCreditScores = {
+    // Aggregate post and comments with author information
+    const postWithAuthorInfo = {
       ...post,
-      authorCreditScore: post.user.creditScore,
+      author: {
+        id: post.user.id,
+        firstName: post.user.firstName,
+        lastName: post.user.lastName,
+        email: post.user.email,
+        photoUrl: post.user.photoUrl,
+        creditScore: post.user.creditScore,
+      },
       comments: post.comments.map((comment) => ({
         ...comment,
-        authorCreditScore: comment.user.creditScore,
+        author: {
+          id: comment.user.id,
+          firstName: comment.user.firstName,
+          lastName: comment.user.lastName,
+          email: comment.user.email,
+          photoUrl: comment.user.photoUrl,
+          creditScore: comment.user.creditScore,
+        },
       })),
     };
 
-    return postWithCreditScores;
+    return postWithAuthorInfo;
   }
 
   async likePost(postId: string): Promise<Post> {
@@ -192,7 +226,14 @@ export class CommunityService {
 
     return {
       ...post,
-      authorCreditScore: post.user.creditScore,
+      author: {
+        id: post.user.id,
+        firstName: post.user.firstName,
+        lastName: post.user.lastName,
+        email: post.user.email,
+        photoUrl: post.user.photoUrl,
+        creditScore: post.user.creditScore,
+      },
     };
   }
 }
