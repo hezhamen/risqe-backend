@@ -132,11 +132,37 @@ export class RoscaService {
     return memberships.map((membership) => membership.group);
   }
 
-  async getGroupMembers(groupId: string): Promise<GroupMember[]> {
-    return await this.memberRepository.find({
+  async getGroupMembers(groupId: string): Promise<
+    Array<{
+      id: string;
+      userId: string;
+      name: string;
+      email: string;
+      creditScore: number;
+      photoUrl?: string | null;
+      isAdmin: boolean;
+      status: string;
+      totalContribution: number;
+      totalReceived: number;
+    }>
+  > {
+    const members = await this.memberRepository.find({
       where: { groupId, status: 'ACTIVE' },
       relations: ['user'],
     });
+
+    return members.map((member) => ({
+      id: member.id,
+      userId: member.userId,
+      name: `${member.user.firstName} ${member.user.lastName}`,
+      email: member.user.email || '',
+      creditScore: member.user.creditScore,
+      photoUrl: member.user.photoUrl,
+      isAdmin: member.is_admin,
+      status: member.status,
+      totalContribution: member.totalContribution,
+      totalReceived: member.totalReceived,
+    }));
   }
 
   async getGroupDetails(
@@ -158,6 +184,7 @@ export class RoscaService {
       email: string;
       status: string;
       isYou: boolean;
+      creditScore: number;
     }>;
     currentVote?: {
       dueDate: string;
@@ -187,6 +214,7 @@ export class RoscaService {
       email: member.user.email || '',
       status: member.totalContribution >= recurringPay ? 'Paid' : 'Payment Due',
       isYou: member.userId === userId,
+      creditScore: member.user.creditScore,
     }));
 
     return {
@@ -289,6 +317,7 @@ export class RoscaService {
       amount: number;
       memberId: string;
       memberName: string;
+      memberCreditScore: number;
       status: string;
       createdAt: Date;
     }>;
@@ -317,6 +346,7 @@ export class RoscaService {
       amount: transaction.amount,
       memberId: transaction.userId,
       memberName: `${transaction.user.firstName} ${transaction.user.lastName}`,
+      memberCreditScore: transaction.user.creditScore,
       status: transaction.status,
       createdAt: transaction.createdAt,
     }));
