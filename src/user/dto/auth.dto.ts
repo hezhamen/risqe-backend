@@ -215,3 +215,13 @@ export class UploadCollateralDto {
   @IsNotEmpty()
   documentType: 'house' | 'car';
 }
+
+export class CheckUserByEmailDto {
+  @ApiProperty({
+    description: 'Email address to check',
+    example: 'user@example.com',
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}

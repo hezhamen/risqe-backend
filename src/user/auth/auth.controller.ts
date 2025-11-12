@@ -31,6 +31,7 @@ import {
   RequestPhoneChangeDto,
   VerifyPhoneChangeDto,
   UploadCollateralDto,
+  CheckUserByEmailDto,
 } from '../dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GetUser } from './get-user.decorator';
@@ -426,5 +427,47 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getCollateralDocuments(@GetUser() user: any) {
     return this.authService.getCollateralDocuments(user.id);
+  }
+
+  @Post('user/check-email')
+  @ApiOperation({
+    summary: 'Check if user exists by email',
+    description:
+      'Check if a user exists by email address and return their public profile information if found. This endpoint is public and does not require authentication.',
+  })
+  @ApiBody({ type: CheckUserByEmailDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User lookup result',
+    schema: {
+      type: 'object',
+      properties: {
+        exists: {
+          type: 'boolean',
+          example: true,
+          description: 'Whether the user exists',
+        },
+        user: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            id: { type: 'string', example: 'uuid-string' },
+            firstName: { type: 'string', example: 'Ahmed' },
+            lastName: { type: 'string', example: 'Hassan' },
+            email: { type: 'string', example: 'user@example.com' },
+            photoUrl: {
+              type: 'string',
+              example: 'https://example.com/photo.jpg',
+              nullable: true,
+            },
+            creditScore: { type: 'number', example: 500 },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid email format' })
+  async checkUserByEmail(@Body(ValidationPipe) checkUserDto: CheckUserByEmailDto) {
+    return this.authService.checkUserByEmail(checkUserDto.email);
   }
 }

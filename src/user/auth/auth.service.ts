@@ -445,4 +445,36 @@ export class AuthService {
       order: { uploadedAt: 'DESC' },
     });
   }
+
+  async checkUserByEmail(email: string): Promise<{
+    exists: boolean;
+    user?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      photoUrl?: string | null;
+      creditScore: number;
+    };
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      return { exists: false };
+    }
+
+    return {
+      exists: true,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email || email,
+        photoUrl: user.photoUrl,
+        creditScore: user.creditScore,
+      },
+    };
+  }
 }
