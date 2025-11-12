@@ -66,3 +66,14 @@ export class ProcessTransactionDto {
   @IsString()
   failureReason?: string;
 }
+
+export class CreateDepositDto {
+  @ApiProperty({
+    description: 'Amount to deposit (top up internal balance)',
+    example: 50000,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0)
+  amount: number;
+}

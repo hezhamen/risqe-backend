@@ -14,6 +14,7 @@ import { User } from '../../user/user.entity';
 import {
   CreateWithdrawalRequestDto,
   ProcessTransactionDto,
+  CreateDepositDto,
 } from '../dto/financial.dto';
 
 @Injectable()
@@ -27,6 +28,63 @@ export class FinancialsService {
     private userRepository: Repository<User>,
     private readonly httpService: HttpService,
   ) {}
+
+  async createDeposit(
+    userId: string,
+    createDepositDto: CreateDepositDto,
+  ): Promise<{
+    id: string;
+    type: string;
+    amount: number;
+    status: string;
+    createdAt: Date;
+    newBalance: number;
+  }> {
+    // Verify user exists
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (createDepositDto.amount <= 0) {
+      throw new BadRequestException('Amount must be greater than 0');
+    }
+
+    // Create deposit transaction
+    const depositTransaction = this.transactionRepository.create({
+      userId,
+      groupId: null,
+      amount: createDepositDto.amount,
+      type: 'DEPOSIT',
+      status: 'COMPLETED',
+      description: 'Balance topped up',
+    });
+
+    const savedTransaction = await this.transactionRepository.save(
+      depositTransaction,
+    );
+
+    // Update user balance
+    await this.userRepository.increment(
+      { id: userId },
+      'internalBalance',
+      createDepositDto.amount,
+    );
+
+    // Get updated user balance
+    const updatedUser = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    return {
+      id: savedTransaction.id,
+      type: savedTransaction.type,
+      amount: savedTransaction.amount,
+      status: savedTransaction.status,
+      createdAt: savedTransaction.createdAt,
+      newBalance: updatedUser?.internalBalance || 0,
+    };
+  }
 
   async createWithdrawalRequest(
     userId: string,

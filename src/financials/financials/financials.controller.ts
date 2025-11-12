@@ -20,6 +20,7 @@ import { FinancialsService } from './financials.service';
 import {
   CreateWithdrawalRequestDto,
   ProcessTransactionDto,
+  CreateDepositDto,
 } from '../dto/financial.dto';
 import { JwtAuthGuard } from '../../user/auth/jwt-auth.guard';
 import { GetUser } from '../../user/auth/get-user.decorator';
@@ -30,6 +31,40 @@ import { GetUser } from '../../user/auth/get-user.decorator';
 @UseGuards(JwtAuthGuard)
 export class FinancialsController {
   constructor(private readonly financialsService: FinancialsService) {}
+
+  @Post('deposits')
+  @ApiOperation({
+    summary: 'Create deposit (top up balance)',
+    description: 'Create a deposit to top up the authenticated user\'s internal balance',
+  })
+  @ApiBody({ type: CreateDepositDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Deposit created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'uuid-string' },
+        type: { type: 'string', example: 'DEPOSIT' },
+        amount: { type: 'number', example: 50000 },
+        status: { type: 'string', example: 'COMPLETED' },
+        createdAt: { type: 'string', format: 'date-time' },
+        newBalance: {
+          type: 'number',
+          example: 150000,
+          description: 'User\'s new balance after deposit',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async createDeposit(
+    @GetUser() user: any,
+    @Body(ValidationPipe) createDepositDto: CreateDepositDto,
+  ) {
+    return this.financialsService.createDeposit(user.id, createDepositDto);
+  }
 
   @Post('withdrawals')
   @ApiOperation({

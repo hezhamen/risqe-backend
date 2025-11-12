@@ -13,8 +13,8 @@ export class GroupTransaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  groupId: string;
+  @Column({ nullable: true })
+  groupId?: string | null;
 
   @Column()
   userId: string;
@@ -38,9 +38,9 @@ export class GroupTransaction {
   externalTransactionId: string;
 
   // Relationships
-  @ManyToOne(() => Group, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Group, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'groupId' })
-  group: Group;
+  group?: Group | null;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
