@@ -193,7 +193,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update user profile',
-    description: "Update authenticated user's profile information (first name, last name, photo URL)",
+    description: "Update authenticated user's profile information (first name, last name, email, photo URL)",
   })
   @ApiBody({ type: UpdateProfileDto })
   @ApiResponse({

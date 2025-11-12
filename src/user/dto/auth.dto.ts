@@ -141,6 +141,15 @@ export class UpdateProfileDto {
   lastName?: string;
 
   @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+    required: false,
+  })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty({
     description: 'URL to user profile photo',
     example: 'https://example.com/photo.jpg',
     required: false,

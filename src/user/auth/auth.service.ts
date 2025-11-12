@@ -228,6 +228,20 @@ export class AuthService {
       }
       user.lastName = updateProfileDto.lastName.trim();
     }
+    if (updateProfileDto.email !== undefined) {
+      const trimmedEmail = updateProfileDto.email.trim();
+      if (trimmedEmail.length === 0) {
+        user.email = null;
+      } else {
+        const existingUser = await this.userRepository.findOne({
+          where: { email: trimmedEmail },
+        });
+        if (existingUser && existingUser.id !== userId) {
+          throw new ConflictException('Email address already in use');
+        }
+        user.email = trimmedEmail;
+      }
+    }
     if (updateProfileDto.photoUrl !== undefined) {
       user.photoUrl = updateProfileDto.photoUrl.trim() || null;
     }
