@@ -18,6 +18,21 @@ export class Group {
   @Column({ default: 1 })
   currentPeriod: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  duration?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  frequency?: string | null;
+
+  @Column({ type: 'varchar', default: 'ORDERED_LIST' })
+  payoutType: 'ORDERED_LIST' | 'VOTE_BASED';
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
   // Relationships
   @OneToMany(() => GroupMember, (member) => member.group)
   members: GroupMember[];

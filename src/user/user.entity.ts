@@ -42,6 +42,18 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   namabarVerificationId?: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  photoUrl?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  pendingPhoneNumber?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  pendingPhoneOtpCode?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  pendingPhoneOtpExpiresAt?: Date | null;
+
   // Relationships (e.g., membership in ROSCA groups)
   @OneToMany(() => GroupMember, (member) => member.user)
   groupMemberships: GroupMember[];

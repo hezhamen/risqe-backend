@@ -260,9 +260,55 @@ Date: Mon, 21 Oct 2025 15:13:00 GMT
 
 Once you have the access token, you can use it for authenticated requests:
 
+### Get User Profile
+
 ```bash
-curl -X GET https://api.abqariya.com/some-protected-endpoint \
+curl -X GET https://api.abqariya.com/auth/profile \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Status Code:** `200 OK`
+
+**Response Headers:**
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 211
+Date: Mon, 21 Oct 2025 15:15:00 GMT
+```
+
+**Response Body:**
+
+```json
+{
+  "id": "13375c64-ed0e-4960-9850-857836800a11",
+  "phoneNumber": "+9647721270202",
+  "firstName": "hezha",
+  "lastName": "amen",
+  "email": null,
+  "internalBalance": "0.00",
+  "pointsBalance": 0,
+  "creditScore": 500,
+  "isPhoneVerified": true
+}
+```
+
+### Unauthorized Access (No Token)
+
+```bash
+curl -X GET https://api.abqariya.com/auth/profile
+```
+
+**Status Code:** `401 Unauthorized`
+
+**Response Body:**
+
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
 ```
 
 ---
@@ -303,6 +349,7 @@ The two-step flow ensures phone number verification before account activation, p
 | ------------------------- | ------ | ------------- | ----------------------------------- |
 | `/auth/register/initiate` | POST   | `201 Created` | User created successfully, OTP sent |
 | `/auth/phone/verify`      | POST   | `200 OK`      | OTP verified, JWT token returned    |
+| `/auth/profile`           | GET    | `200 OK`      | User profile retrieved successfully |
 | `/`                       | GET    | `200 OK`      | Health check endpoint               |
 
 ### Error Responses

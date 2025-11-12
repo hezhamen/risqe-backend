@@ -1,0 +1,1207 @@
+openapi: 3.0.0
+info:
+  title: Missing Endpoints for Risqe Mobile App
+  description: This document lists all API endpoints that are used in the Flutter mobile app but are missing from the backend.yml specification.
+  version: 1.0.0
+
+paths:
+  # ============================================
+  # AUTHENTICATION ENDPOINTS
+  # ============================================
+
+  /auth/forgot-password:
+    post:
+      description: Request password reset for a user account. Sends OTP to the user's phone number for password reset verification.
+      operationId: AuthController_forgotPassword
+      summary: Request password reset
+      tags:
+        - Authentication
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  description: User phone number in international format
+                  example: "+9647721270202"
+                  pattern: ^\+[1-9]\d{1,14}$
+              required:
+                - phoneNumber
+      responses:
+        "200":
+          description: Password reset OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password reset OTP sent to your phone"
+                  provider:
+                    type: string
+                    enum:
+                      - namabar
+                      - dev
+                    example: namabar
+                  verificationId:
+                    type: string
+                    example: 68f389fe7c3e004536e0efb0
+                  devCode:
+                    type: string
+                    example: "123456"
+                    description: Only returned in development mode
+        "400":
+          description: Invalid phone number format
+        "404":
+          description: User not found
+      usedIn:
+        - lib/screens/auth/forgot_password_screen.dart
+        - lib/services/auth_service.dart (forgotPassword method)
+
+  /auth/profile:
+    patch:
+      description: Update authenticated user's profile information (first name, last name, photo URL)
+      operationId: AuthController_updateProfile
+      summary: Update user profile
+      tags:
+        - Authentication
+      security:
+        - JWT-auth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  description: User first name
+                  example: Ahmed
+                  minLength: 1
+                lastName:
+                  type: string
+                  description: User last name
+                  example: Hassan
+                  minLength: 1
+                photoUrl:
+                  type: string
+                  description: URL to user's profile photo
+                  example: "https://example.com/photo.jpg"
+              required: []
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: ce17af98-8628-44f4-aac6-dc42113d5ce1
+                  phoneNumber:
+                    type: string
+                    example: "+9647721270202"
+                  firstName:
+                    type: string
+                    example: Ahmed
+                  lastName:
+                    type: string
+                    example: Hassan
+                  email:
+                    type: string
+                    example: test@example.com
+                    nullable: true
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/photo.jpg"
+                    nullable: true
+        "401":
+          description: Unauthorized - invalid or missing token
+        "400":
+          description: Bad request - validation failed
+      usedIn:
+        - lib/screens/home/profile/account_management_screen.dart
+        - lib/services/auth_service.dart (updateProfile method)
+
+  /auth/phone/change/request:
+    post:
+      description: Request OTP to change user's phone number. Sends OTP to the new phone number for verification.
+      operationId: AuthController_requestPhoneChangeOtp
+      summary: Request OTP for phone number change
+      tags:
+        - Authentication
+      security:
+        - JWT-auth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPhoneNumber:
+                  type: string
+                  description: New phone number in international format
+                  example: "+9647721270203"
+                  pattern: ^\+[1-9]\d{1,14}$
+              required:
+                - newPhoneNumber
+      responses:
+        "200":
+          description: OTP sent successfully to new phone number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OTP sent to new phone number"
+                  provider:
+                    type: string
+                    enum:
+                      - namabar
+                      - dev
+                    example: namabar
+                  verificationId:
+                    type: string
+                    example: 68f389fe7c3e004536e0efb0
+                  devCode:
+                    type: string
+                    example: "123456"
+                    description: Only returned in development mode
+        "400":
+          description: Invalid phone number format or phone already in use
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/profile/phone_otp_verification_screen.dart
+        - lib/services/auth_service.dart (requestPhoneChangeOtp method)
+
+  /auth/change-password:
+    post:
+      description: Change user's password. Requires current password for verification.
+      operationId: AuthController_changePassword
+      summary: Change user password
+      tags:
+        - Authentication
+      security:
+        - JWT-auth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                  description: Current password for verification
+                  example: oldpassword123
+                  minLength: 6
+                newPassword:
+                  type: string
+                  description: New password (minimum 6 characters)
+                  example: newpassword123
+                  minLength: 6
+              required:
+                - currentPassword
+                - newPassword
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password changed successfully"
+        "400":
+          description: Bad request - validation failed or current password incorrect
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/profile/reset_password_screen.dart
+        - lib/services/auth_service.dart (changePassword method)
+
+  /auth/phone/change/verify:
+    post:
+      description: Verify OTP and update user's phone number to the new phone number.
+      operationId: AuthController_verifyPhoneChangeOtp
+      summary: Verify OTP and change phone number
+      tags:
+        - Authentication
+      security:
+        - JWT-auth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPhoneNumber:
+                  type: string
+                  description: New phone number in international format
+                  example: "+9647721270203"
+                  pattern: ^\+[1-9]\d{1,14}$
+                code:
+                  type: string
+                  description: OTP verification code
+                  example: "123456"
+                  minLength: 4
+                  maxLength: 8
+              required:
+                - newPhoneNumber
+                - code
+      responses:
+        "200":
+          description: Phone number updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Phone number updated successfully"
+                  phoneNumber:
+                    type: string
+                    example: "+9647721270203"
+        "400":
+          description: Invalid or expired OTP code
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/profile/phone_otp_verification_screen.dart
+        - lib/services/auth_service.dart (verifyPhoneChangeOtp method)
+
+  /auth/collateral/upload:
+    post:
+      description: Upload a collateral document (house or car) for credit score verification. Accepts multipart/form-data with document file.
+      operationId: AuthController_uploadCollateralDocument
+      summary: Upload collateral document
+      tags:
+        - Authentication
+      security:
+        - JWT-auth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                documentType:
+                  type: string
+                  description: Type of collateral document
+                  enum:
+                    - house
+                    - car
+                  example: house
+                document:
+                  type: string
+                  format: binary
+                  description: Document file (PDF, image, etc.)
+              required:
+                - documentType
+                - document
+      responses:
+        "200":
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Document uploaded successfully. It will be reviewed by an admin."
+                  documentId:
+                    type: string
+                    example: uuid-string
+                  documentType:
+                    type: string
+                    example: house
+                  status:
+                    type: string
+                    enum:
+                      - PENDING
+                      - APPROVED
+                      - REJECTED
+                    example: PENDING
+                  uploadedAt:
+                    type: string
+                    format: date-time
+        "400":
+          description: Bad request - invalid file or document type
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/profile/verify_credit_score_screen.dart
+        - lib/services/auth_service.dart (uploadCollateralDocument method)
+
+  /auth/collateral/documents:
+    get:
+      description: Get all collateral documents uploaded by the authenticated user with their verification status.
+      operationId: AuthController_getCollateralDocuments
+      summary: Get collateral documents
+      tags:
+        - Authentication
+      security:
+        - JWT-auth: []
+      parameters: []
+      responses:
+        "200":
+          description: List of collateral documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: uuid-string
+                    documentType:
+                      type: string
+                      enum:
+                        - house
+                        - car
+                      example: house
+                    status:
+                      type: string
+                      enum:
+                        - PENDING
+                        - APPROVED
+                        - REJECTED
+                      example: PENDING
+                    uploadedAt:
+                      type: string
+                      format: date-time
+                    documentUrl:
+                      type: string
+                      example: "https://example.com/documents/uuid.pdf"
+                      nullable: true
+                    rejectionReason:
+                      type: string
+                      example: "Document quality too low"
+                      nullable: true
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/profile/verify_credit_score_screen.dart
+        - lib/services/auth_service.dart (getCollateralDocuments method)
+
+  # ============================================
+  # ROSCA GROUP ENDPOINTS
+  # ============================================
+
+  /rosca/groups/{id}:
+    get:
+      description: Get detailed information about a specific ROSCA group including members, transactions, voting status, and payment history.
+      operationId: RoscaController_getGroupDetails
+      summary: Get ROSCA group details
+      tags:
+        - ROSCA
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: ROSCA group ID
+          schema:
+            type: string
+            example: uuid-string
+      responses:
+        "200":
+          description: Group details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: uuid-string
+                  name:
+                    type: string
+                    example: Peshkawtn
+                  totalFundTarget:
+                    type: number
+                    example: 840000
+                  totalPoolSize:
+                    type: string
+                    example: "840,000 IQD"
+                  recurringPay:
+                    type: string
+                    example: "210,000 IQD"
+                  duration:
+                    type: string
+                    example: "1 year every month"
+                  memberCount:
+                    type: number
+                    example: 4
+                  isActive:
+                    type: boolean
+                    example: true
+                  createdAt:
+                    type: string
+                    format: date-time
+                  members:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: uuid-string
+                        name:
+                          type: string
+                          example: Bilal Aram Kareem
+                        email:
+                          type: string
+                          example: bilal@demo.com
+                        status:
+                          type: string
+                          enum:
+                            - Paid
+                            - Payment Due
+                          example: Paid
+                        isYou:
+                          type: boolean
+                          example: false
+                  currentVote:
+                    type: object
+                    nullable: true
+                    properties:
+                      dueDate:
+                        type: string
+                        example: "Due today"
+                      voterNames:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Bilal", "Ahmed", "Salam"]
+        "401":
+          description: Unauthorized
+        "404":
+          description: Group not found
+      usedIn:
+        - lib/screens/home/group_view_screen.dart
+        - lib/screens/create_group/congratulations_screen.dart (when navigating to group)
+
+  /rosca/groups/{id}/vote:
+    post:
+      description: Submit a vote for payout distribution in a ROSCA group. Used for vote-based payout type groups.
+      operationId: RoscaController_voteOnPayout
+      summary: Vote on group payout
+      tags:
+        - ROSCA
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: ROSCA group ID
+          schema:
+            type: string
+            example: uuid-string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                memberId:
+                  type: string
+                  description: ID of the member to vote for
+                  example: uuid-string
+                voteType:
+                  type: string
+                  enum:
+                    - approve
+                    - reject
+                  example: approve
+              required:
+                - memberId
+                - voteType
+      responses:
+        "200":
+          description: Vote submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Vote submitted successfully"
+                  voteId:
+                    type: string
+                    example: uuid-string
+        "400":
+          description: Bad request - invalid vote or already voted
+        "401":
+          description: Unauthorized
+        "404":
+          description: Group or member not found
+      usedIn:
+        - lib/screens/home/group_view_screen.dart (_GroupVoteContainer)
+        - lib/screens/home/widgets/vote_container.dart
+
+  /rosca/groups/{id}/invite:
+    post:
+      description: Invite a member to join the ROSCA group by email. Sends an invitation email to the specified email address.
+      operationId: RoscaController_inviteMember
+      summary: Invite member to group
+      tags:
+        - ROSCA
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: ROSCA group ID
+          schema:
+            type: string
+            example: uuid-string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Email address of the member to invite
+                  example: newmember@example.com
+                  format: email
+              required:
+                - email
+      responses:
+        "200":
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Invite sent to newmember@example.com"
+                  invitationId:
+                    type: string
+                    example: uuid-string
+        "400":
+          description: Bad request - invalid email or already a member
+        "401":
+          description: Unauthorized
+        "404":
+          description: Group not found
+      usedIn:
+        - lib/screens/create_group/widgets/members_content.dart (_sendInvite method)
+
+  /rosca/groups/{id}/transactions:
+    get:
+      description: Get transaction history for a specific ROSCA group including all payments, payouts, and financial activities.
+      operationId: RoscaController_getGroupTransactions
+      summary: Get group transaction history
+      tags:
+        - ROSCA
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: ROSCA group ID
+          schema:
+            type: string
+            example: uuid-string
+        - name: limit
+          required: false
+          in: query
+          description: Maximum number of transactions to return
+          schema:
+            type: integer
+            example: 50
+            default: 50
+        - name: offset
+          required: false
+          in: query
+          description: Number of transactions to skip
+          schema:
+            type: integer
+            example: 0
+            default: 0
+      responses:
+        "200":
+          description: List of group transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: uuid-string
+                        type:
+                          type: string
+                          enum:
+                            - PAYMENT
+                            - PAYOUT
+                            - DEPOSIT
+                            - WITHDRAWAL
+                          example: PAYMENT
+                        amount:
+                          type: number
+                          example: 210000
+                        memberId:
+                          type: string
+                          example: uuid-string
+                        memberName:
+                          type: string
+                          example: Bilal Aram Kareem
+                        status:
+                          type: string
+                          enum:
+                            - PENDING
+                            - COMPLETED
+                            - FAILED
+                          example: COMPLETED
+                        createdAt:
+                          type: string
+                          format: date-time
+                  total:
+                    type: number
+                    example: 100
+                  limit:
+                    type: number
+                    example: 50
+                  offset:
+                    type: number
+                    example: 0
+        "401":
+          description: Unauthorized
+        "404":
+          description: Group not found
+      usedIn:
+        - lib/screens/home/group_view_screen.dart (for displaying payment history)
+
+  /rosca/groups:
+    post:
+      description: Create a new ROSCA group with complete configuration including name, fund target, duration, frequency, members, and payout type. The current CreateGroupDto only includes name and totalFundTarget, but the app collects additional data.
+      operationId: RoscaController_createGroup
+      summary: Create a new ROSCA group (enhanced)
+      tags:
+        - ROSCA
+      security:
+        - JWT-auth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the ROSCA group
+                  example: Peshkawtn
+                  minLength: 1
+                totalFundTarget:
+                  type: number
+                  description: Total fund target amount for the ROSCA group
+                  example: 840000
+                  minimum: 0
+                duration:
+                  type: string
+                  description: Duration of the group (e.g., "1 year", "6 months")
+                  example: "1 year"
+                frequency:
+                  type: string
+                  description: Frequency of payouts (e.g., "month", "week", "day")
+                  example: "month"
+                payoutType:
+                  type: string
+                  description: Type of payout distribution
+                  enum:
+                    - ORDERED_LIST
+                    - VOTE_BASED
+                  example: ORDERED_LIST
+                members:
+                  type: array
+                  description: List of members to add to the group
+                  items:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: member@example.com
+                        format: email
+                      name:
+                        type: string
+                        nullable: true
+                        example: John Doe
+                      percentage:
+                        type: number
+                        description: Percentage allocation (for ordered list payout type)
+                        example: 25
+                        minimum: 0
+                        maximum: 100
+                  minItems: 1
+                memberOrder:
+                  type: array
+                  description: Ordered list of member IDs for payout order (for ordered list payout type)
+                  items:
+                    type: string
+                  nullable: true
+              required:
+                - name
+                - totalFundTarget
+                - duration
+                - frequency
+                - payoutType
+                - members
+      responses:
+        "201":
+          description: ROSCA group created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: uuid-string
+                  name:
+                    type: string
+                    example: Peshkawtn
+                  totalFundTarget:
+                    type: number
+                    example: 840000
+                  duration:
+                    type: string
+                    example: "1 year"
+                  frequency:
+                    type: string
+                    example: "month"
+                  payoutType:
+                    type: string
+                    example: ORDERED_LIST
+                  memberCount:
+                    type: number
+                    example: 4
+                  createdAt:
+                    type: string
+                    format: date-time
+        "400":
+          description: Bad request - validation failed
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/create_group/create_group_screen.dart
+        - lib/screens/create_group/congratulations_screen.dart
+
+  # ============================================
+  # NOTIFICATIONS ENDPOINTS
+  # ============================================
+
+  /notifications:
+    get:
+      description: Get all notifications for the authenticated user. Supports filtering by type (all, payments due, voting due).
+      operationId: NotificationsController_getNotifications
+      summary: Get user notifications
+      tags:
+        - Notifications
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: type
+          required: false
+          in: query
+          description: Filter notifications by type
+          schema:
+            type: string
+            enum:
+              - all
+              - payments_due
+              - voting_due
+            example: all
+            default: all
+        - name: limit
+          required: false
+          in: query
+          description: Maximum number of notifications to return
+          schema:
+            type: integer
+            example: 50
+            default: 50
+        - name: offset
+          required: false
+          in: query
+          description: Number of notifications to skip
+          schema:
+            type: integer
+            example: 0
+            default: 0
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: uuid-string
+                        type:
+                          type: string
+                          enum:
+                            - PAYMENT_DUE
+                            - VOTING_DUE
+                            - GROUP_INVITATION
+                            - PAYMENT_RECEIVED
+                            - VOTE_RESULT
+                          example: PAYMENT_DUE
+                        title:
+                          type: string
+                          example: "Payment Due"
+                        message:
+                          type: string
+                          example: "Your payment for group Peshkawtn is due"
+                        time:
+                          type: string
+                          example: "2 hours ago"
+                        createdAt:
+                          type: string
+                          format: date-time
+                        read:
+                          type: boolean
+                          example: false
+                        groupId:
+                          type: string
+                          nullable: true
+                          example: uuid-string
+                        actionUrl:
+                          type: string
+                          nullable: true
+                          example: "/rosca/groups/uuid-string"
+                  total:
+                    type: number
+                    example: 25
+                  unreadCount:
+                    type: number
+                    example: 5
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/notifications/notifications_screen.dart
+
+  # ============================================
+  # FINANCIALS/TRANSACTIONS ENDPOINTS (ENHANCED)
+  # ============================================
+
+  /financials/transactions:
+    get:
+      description: Get all financial transactions for the authenticated user with enhanced details including group-related transactions. The existing endpoint in backend.yml only supports DEPOSIT, WITHDRAWAL, and TRANSFER types, but the app needs GROUP_PAYMENT and GROUP_PAYOUT types as well.
+      operationId: FinancialsController_getUserTransactionsEnhanced
+      summary: Get user transactions (enhanced)
+      tags:
+        - Financials
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: type
+          required: false
+          in: query
+          description: Filter transactions by type
+          schema:
+            type: string
+            enum:
+              - all
+              - DEPOSIT
+              - WITHDRAWAL
+              - GROUP_PAYMENT
+              - GROUP_PAYOUT
+              - TRANSFER
+            example: all
+            default: all
+        - name: limit
+          required: false
+          in: query
+          description: Maximum number of transactions to return
+          schema:
+            type: integer
+            example: 50
+            default: 50
+        - name: offset
+          required: false
+          in: query
+          description: Number of transactions to skip
+          schema:
+            type: integer
+            example: 0
+            default: 0
+      responses:
+        "200":
+          description: List of user transactions with enhanced details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: uuid-string
+                        type:
+                          type: string
+                          enum:
+                            - DEPOSIT
+                            - WITHDRAWAL
+                            - GROUP_PAYMENT
+                            - GROUP_PAYOUT
+                            - TRANSFER
+                          example: DEPOSIT
+                        title:
+                          type: string
+                          description: Human-readable transaction title
+                          example: "Balance Topped Up"
+                        message:
+                          type: string
+                          description: Detailed transaction message
+                          example: "You added 50,000 IQD to your balance"
+                        amount:
+                          type: number
+                          description: Transaction amount in IQD
+                          example: 50000
+                        status:
+                          type: string
+                          enum:
+                            - PENDING
+                            - COMPLETED
+                            - FAILED
+                          example: COMPLETED
+                        groupId:
+                          type: string
+                          nullable: true
+                          description: Group ID (for GROUP_PAYMENT and GROUP_PAYOUT types)
+                          example: uuid-string
+                        groupName:
+                          type: string
+                          nullable: true
+                          description: Group name (for GROUP_PAYMENT and GROUP_PAYOUT types)
+                          example: "Peshkawtn"
+                        paymentMethod:
+                          type: string
+                          nullable: true
+                          description: Payment method (for WITHDRAWAL type)
+                          enum:
+                            - BANK_TRANSFER
+                            - CASH
+                            - MOBILE_MONEY
+                          example: BANK_TRANSFER
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2024-01-15T10:30:00Z"
+                        time:
+                          type: string
+                          description: Human-readable time string (e.g., "2 hours ago", "1 day ago")
+                          example: "2 hours ago"
+                  total:
+                    type: number
+                    description: Total number of transactions
+                    example: 100
+                  limit:
+                    type: number
+                    example: 50
+                  offset:
+                    type: number
+                    example: 0
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/home/profile/transactions_screen.dart
+
+  # ============================================
+  # REDEEM/COUPONS ENDPOINTS
+  # ============================================
+
+  /redeem/coupons:
+    get:
+      description: Get all available coupons that can be redeemed with points. Includes redeemed and available coupons.
+      operationId: RedeemController_getCoupons
+      summary: Get available coupons
+      tags:
+        - Redeem
+      security:
+        - JWT-auth: []
+      parameters: []
+      responses:
+        "200":
+          description: List of coupons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: uuid-string
+                    title:
+                      type: string
+                      example: "Get 2 Burgers for free"
+                    subtitle:
+                      type: string
+                      example: "Bees Restaurant"
+                    cost:
+                      type: number
+                      description: Points required to redeem
+                      example: 250
+                    redeemed:
+                      type: boolean
+                      example: false
+                    redeemedAt:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    expiresAt:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    imageUrl:
+                      type: string
+                      nullable: true
+                      example: "https://example.com/coupon-image.jpg"
+        "401":
+          description: Unauthorized
+      usedIn:
+        - lib/screens/redeem/redeem_list.dart
+
+  /redeem/coupons/{id}:
+    post:
+      description: Redeem a coupon using user's points. Deducts the coupon cost from user's points balance.
+      operationId: RedeemController_redeemCoupon
+      summary: Redeem a coupon
+      tags:
+        - Redeem
+      security:
+        - JWT-auth: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Coupon ID
+          schema:
+            type: string
+            example: uuid-string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        "200":
+          description: Coupon redeemed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Coupon redeemed successfully"
+                  couponId:
+                    type: string
+                    example: uuid-string
+                  pointsRemaining:
+                    type: number
+                    example: 4170
+                  redemptionCode:
+                    type: string
+                    example: "REDEEM-ABC123"
+        "400":
+          description: Bad request - insufficient points, coupon already redeemed, or coupon expired
+        "401":
+          description: Unauthorized
+        "404":
+          description: Coupon not found
+      usedIn:
+        - lib/screens/redeem/redeem_list.dart (_redeemCoupon method)
+
+components:
+  securitySchemes:
+    JWT-auth:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      name: JWT
+      description: Enter JWT token
+      in: header

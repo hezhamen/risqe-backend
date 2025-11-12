@@ -8,6 +8,8 @@ import { UserModule } from './user/user.module';
 import { RoscaModule } from './rosca/rosca.module';
 import { FinancialsModule } from './financials/financials.module';
 import { CommunityModule } from './community/community.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { RedeemModule } from './redeem/redeem.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { CommunityModule } from './community/community.module';
     RoscaModule,
     FinancialsModule,
     CommunityModule,
+    NotificationsModule,
+    RedeemModule,
     // Future feature modules will be listed here...
   ],
   controllers: [AppController],

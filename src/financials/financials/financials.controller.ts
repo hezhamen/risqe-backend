@@ -4,6 +4,7 @@ import {
   Get,
   Body,
   Param,
+  Query,
   ValidationPipe,
   UseGuards,
 } from '@nestjs/common';
@@ -133,37 +134,101 @@ export class FinancialsController {
 
   @Get('transactions')
   @ApiOperation({
-    summary: 'Get user transactions',
+    summary: 'Get user transactions (enhanced)',
     description:
-      'Retrieve all financial transactions for the authenticated user',
+      'Get all financial transactions for the authenticated user with enhanced details including group-related transactions.',
   })
   @ApiResponse({
     status: 200,
-    description: 'List of user transactions',
+    description: 'List of user transactions with enhanced details',
     schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', example: 'uuid-string' },
-          amount: { type: 'number', example: 25.0 },
-          type: {
-            type: 'string',
-            enum: ['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'],
-            example: 'DEPOSIT',
+      type: 'object',
+      properties: {
+        transactions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              type: {
+                type: 'string',
+                enum: ['DEPOSIT', 'WITHDRAWAL', 'GROUP_PAYMENT', 'GROUP_PAYOUT', 'TRANSFER'],
+                example: 'DEPOSIT',
+              },
+              title: {
+                type: 'string',
+                description: 'Human-readable transaction title',
+                example: 'Balance Topped Up',
+              },
+              message: {
+                type: 'string',
+                description: 'Detailed transaction message',
+                example: 'You added 50,000 IQD to your balance',
+              },
+              amount: {
+                type: 'number',
+                description: 'Transaction amount in IQD',
+                example: 50000,
+              },
+              status: {
+                type: 'string',
+                enum: ['PENDING', 'COMPLETED', 'FAILED'],
+                example: 'COMPLETED',
+              },
+              groupId: {
+                type: 'string',
+                nullable: true,
+                description: 'Group ID (for GROUP_PAYMENT and GROUP_PAYOUT types)',
+                example: 'uuid-string',
+              },
+              groupName: {
+                type: 'string',
+                nullable: true,
+                description: 'Group name (for GROUP_PAYMENT and GROUP_PAYOUT types)',
+                example: 'Peshkawtn',
+              },
+              paymentMethod: {
+                type: 'string',
+                nullable: true,
+                description: 'Payment method (for WITHDRAWAL type)',
+                enum: ['BANK_TRANSFER', 'CASH', 'MOBILE_MONEY'],
+                example: 'BANK_TRANSFER',
+              },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                example: '2024-01-15T10:30:00Z',
+              },
+              time: {
+                type: 'string',
+                description: 'Human-readable time string (e.g., "2 hours ago", "1 day ago")',
+                example: '2 hours ago',
+              },
+            },
           },
-          status: {
-            type: 'string',
-            enum: ['PENDING', 'COMPLETED', 'FAILED'],
-            example: 'COMPLETED',
-          },
-          createdAt: { type: 'string', format: 'date-time' },
         },
+        total: {
+          type: 'number',
+          description: 'Total number of transactions',
+          example: 100,
+        },
+        limit: { type: 'number', example: 50 },
+        offset: { type: 'number', example: 0 },
       },
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getUserTransactions(@GetUser() user: any) {
-    return this.financialsService.getUserTransactions(user.id);
+  async getUserTransactions(
+    @GetUser() user: any,
+    @Query('type') type?: 'all' | 'DEPOSIT' | 'WITHDRAWAL' | 'GROUP_PAYMENT' | 'GROUP_PAYOUT' | 'TRANSFER',
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    return this.financialsService.getUserTransactions(
+      user.id,
+      type || 'all',
+      limit ? parseInt(limit.toString(), 10) : 50,
+      offset ? parseInt(offset.toString(), 10) : 0,
+    );
   }
 }

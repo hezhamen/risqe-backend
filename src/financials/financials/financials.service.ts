@@ -109,12 +109,135 @@ export class FinancialsService {
     });
   }
 
-  async getUserTransactions(userId: string): Promise<GroupTransaction[]> {
-    return await this.transactionRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
+  async getUserTransactions(
+    userId: string,
+    type?: 'all' | 'DEPOSIT' | 'WITHDRAWAL' | 'GROUP_PAYMENT' | 'GROUP_PAYOUT' | 'TRANSFER',
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<{
+    transactions: Array<{
+      id: string;
+      type: string;
+      title: string;
+      message: string;
+      amount: number;
+      status: string;
+      groupId?: string | null;
+      groupName?: string | null;
+      paymentMethod?: string | null;
+      createdAt: Date;
+      time: string;
+    }>;
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const where: any = { userId };
+
+    if (type && type !== 'all') {
+      if (type === 'GROUP_PAYMENT' || type === 'GROUP_PAYOUT') {
+        where.type = type === 'GROUP_PAYMENT' ? 'PAYMENT' : 'PAYOUT';
+      } else {
+        where.type = type;
+      }
+    }
+
+    const [transactions, total] = await this.transactionRepository.findAndCount({
+      where,
       relations: ['group', 'user'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
     });
+
+    const formatTimeAgo = (date: Date): string => {
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    };
+
+    const getTransactionTitle = (transactionType: string): string => {
+      switch (transactionType) {
+        case 'DEPOSIT':
+          return 'Balance Topped Up';
+        case 'WITHDRAWAL':
+          return 'Withdrawal';
+        case 'PAYMENT':
+          return 'Group Payment';
+        case 'PAYOUT':
+          return 'Group Payout';
+        case 'TRANSFER':
+          return 'Transfer';
+        default:
+          return 'Transaction';
+      }
+    };
+
+    const getTransactionMessage = (
+      transactionType: string,
+      amount: number,
+      groupName?: string | null,
+    ): string => {
+      switch (transactionType) {
+        case 'DEPOSIT':
+          return `You added ${amount.toLocaleString()} IQD to your balance`;
+        case 'WITHDRAWAL':
+          return `You withdrew ${amount.toLocaleString()} IQD`;
+        case 'PAYMENT':
+          return groupName
+            ? `You paid ${amount.toLocaleString()} IQD to group ${groupName}`
+            : `You paid ${amount.toLocaleString()} IQD to a group`;
+        case 'PAYOUT':
+          return groupName
+            ? `You received ${amount.toLocaleString()} IQD from group ${groupName}`
+            : `You received ${amount.toLocaleString()} IQD from a group`;
+        case 'TRANSFER':
+          return `You transferred ${amount.toLocaleString()} IQD`;
+        default:
+          return `Transaction of ${amount.toLocaleString()} IQD`;
+      }
+    };
+
+    const formattedTransactions = transactions.map((transaction) => {
+      const transactionType =
+        transaction.type === 'PAYMENT'
+          ? 'GROUP_PAYMENT'
+          : transaction.type === 'PAYOUT'
+            ? 'GROUP_PAYOUT'
+            : transaction.type;
+
+      return {
+        id: transaction.id,
+        type: transactionType,
+        title: getTransactionTitle(transaction.type),
+        message: getTransactionMessage(
+          transaction.type,
+          transaction.amount,
+          transaction.group?.name,
+        ),
+        amount: transaction.amount,
+        status: transaction.status,
+        groupId: transaction.groupId || null,
+        groupName: transaction.group?.name || null,
+        paymentMethod: null,
+        createdAt: transaction.createdAt,
+        time: formatTimeAgo(transaction.createdAt),
+      };
+    });
+
+    return {
+      transactions: formattedTransactions,
+      total,
+      limit,
+      offset,
+    };
   }
 
   private async processExternalPayment(

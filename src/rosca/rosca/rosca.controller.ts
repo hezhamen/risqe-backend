@@ -16,9 +16,15 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { RoscaService } from './rosca.service';
-import { CreateGroupDto, JoinGroupDto } from '../dto/rosca.dto';
+import {
+  CreateGroupDto,
+  JoinGroupDto,
+  VoteOnPayoutDto,
+  InviteMemberDto,
+} from '../dto/rosca.dto';
 import { JwtAuthGuard } from '../../user/auth/jwt-auth.guard';
 import { GetUser } from '../../user/auth/get-user.decorator';
+import { Query } from '@nestjs/common';
 
 @ApiTags('ROSCA')
 @ApiBearerAuth('JWT-auth')
@@ -144,5 +150,198 @@ export class RoscaController {
   @ApiResponse({ status: 404, description: 'Group not found' })
   async getGroupMembers(@Param('id') groupId: string) {
     return this.roscaService.getGroupMembers(groupId);
+  }
+
+  @Get('groups/:id')
+  @ApiOperation({
+    summary: 'Get ROSCA group details',
+    description:
+      'Get detailed information about a specific ROSCA group including members, transactions, voting status, and payment history.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ROSCA group ID',
+    example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Group details retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'uuid-string' },
+        name: { type: 'string', example: 'Peshkawtn' },
+        totalFundTarget: { type: 'number', example: 840000 },
+        totalPoolSize: { type: 'string', example: '840,000 IQD' },
+        recurringPay: { type: 'string', example: '210,000 IQD' },
+        duration: { type: 'string', example: '1 year every month' },
+        memberCount: { type: 'number', example: 4 },
+        isActive: { type: 'boolean', example: true },
+        createdAt: { type: 'string', format: 'date-time' },
+        members: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              name: { type: 'string', example: 'Bilal Aram Kareem' },
+              email: { type: 'string', example: 'bilal@demo.com' },
+              status: {
+                type: 'string',
+                enum: ['Paid', 'Payment Due'],
+                example: 'Paid',
+              },
+              isYou: { type: 'boolean', example: false },
+            },
+          },
+        },
+        currentVote: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            dueDate: { type: 'string', example: 'Due today' },
+            voterNames: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['Bilal', 'Ahmed', 'Salam'],
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
+  async getGroupDetails(@GetUser() user: any, @Param('id') groupId: string) {
+    return this.roscaService.getGroupDetails(groupId, user.id);
+  }
+
+  @Post('groups/:id/vote')
+  @ApiOperation({
+    summary: 'Vote on group payout',
+    description:
+      'Submit a vote for payout distribution in a ROSCA group. Used for vote-based payout type groups.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ROSCA group ID',
+    example: 'uuid-string',
+  })
+  @ApiBody({ type: VoteOnPayoutDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Vote submitted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Vote submitted successfully' },
+        voteId: { type: 'string', example: 'uuid-string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid vote or already voted' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Group or member not found' })
+  async voteOnPayout(
+    @GetUser() user: any,
+    @Param('id') groupId: string,
+    @Body(ValidationPipe) voteOnPayoutDto: VoteOnPayoutDto,
+  ) {
+    return this.roscaService.voteOnPayout(groupId, user.id, voteOnPayoutDto);
+  }
+
+  @Post('groups/:id/invite')
+  @ApiOperation({
+    summary: 'Invite member to group',
+    description: 'Invite a member to join the ROSCA group by email. Sends an invitation email to the specified email address.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ROSCA group ID',
+    example: 'uuid-string',
+  })
+  @ApiBody({ type: InviteMemberDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Invitation sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Invite sent to newmember@example.com' },
+        invitationId: { type: 'string', example: 'uuid-string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid email or already a member' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
+  async inviteMember(
+    @GetUser() user: any,
+    @Param('id') groupId: string,
+    @Body(ValidationPipe) inviteMemberDto: InviteMemberDto,
+  ) {
+    return this.roscaService.inviteMember(groupId, user.id, inviteMemberDto);
+  }
+
+  @Get('groups/:id/transactions')
+  @ApiOperation({
+    summary: 'Get group transaction history',
+    description:
+      'Get transaction history for a specific ROSCA group including all payments, payouts, and financial activities.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ROSCA group ID',
+    example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of group transactions',
+    schema: {
+      type: 'object',
+      properties: {
+        transactions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              type: {
+                type: 'string',
+                enum: ['PAYMENT', 'PAYOUT', 'DEPOSIT', 'WITHDRAWAL'],
+                example: 'PAYMENT',
+              },
+              amount: { type: 'number', example: 210000 },
+              memberId: { type: 'string', example: 'uuid-string' },
+              memberName: { type: 'string', example: 'Bilal Aram Kareem' },
+              status: {
+                type: 'string',
+                enum: ['PENDING', 'COMPLETED', 'FAILED'],
+                example: 'COMPLETED',
+              },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+        total: { type: 'number', example: 100 },
+        limit: { type: 'number', example: 50 },
+        offset: { type: 'number', example: 0 },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
+  async getGroupTransactions(
+    @Param('id') groupId: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ) {
+    return this.roscaService.getGroupTransactions(
+      groupId,
+      limit ? parseInt(limit.toString(), 10) : 50,
+      offset ? parseInt(offset.toString(), 10) : 0,
+    );
   }
 }

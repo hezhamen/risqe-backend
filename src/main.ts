@@ -27,6 +27,8 @@ async function bootstrap() {
     .addTag('ROSCA', 'ROSCA group management and operations')
     .addTag('Financials', 'Financial transactions and withdrawal requests')
     .addTag('Community', 'Community posts and interactions')
+    .addTag('Notifications', 'User notifications and alerts')
+    .addTag('Redeem', 'Coupon redemption and rewards')
     .addBearerAuth(
       {
         type: 'http',
