@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from '../post.entity';
 import { Comment } from '../comment.entity';
+import { PostLike } from '../post-like.entity';
 import { User } from '../../user/user.entity';
 import {
   CreatePostDto,
@@ -17,6 +18,8 @@ export class CommunityService {
     private postRepository: Repository<Post>,
     @InjectRepository(Comment)
     private commentRepository: Repository<Comment>,
+    @InjectRepository(PostLike)
+    private postLikeRepository: Repository<PostLike>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
@@ -133,7 +136,7 @@ export class CommunityService {
     }));
   }
 
-  async getPostWithDetails(postId: string): Promise<any> {
+  async getPostWithDetails(postId: string, currentUserId?: string): Promise<any> {
     const post = await this.postRepository.findOne({
       where: { id: postId },
       relations: ['user', 'comments', 'comments.user'],
@@ -143,26 +146,39 @@ export class CommunityService {
       throw new NotFoundException('Post not found');
     }
 
+    // Check if current user has liked this post
+    let hasLiked = false;
+    if (currentUserId) {
+      const like = await this.postLikeRepository.findOne({
+        where: { postId, userId: currentUserId },
+      });
+      hasLiked = !!like;
+    }
+
+    // Sort comments by createdAt (oldest first)
+    const sortedComments = [...post.comments].sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    );
+
     // Aggregate post and comments with author information
     const postWithAuthorInfo = {
-      ...post,
+      title: post.title,
       author: {
         id: post.user.id,
-        firstName: post.user.firstName,
-        lastName: post.user.lastName,
-        email: post.user.email,
-        photoUrl: post.user.photoUrl,
-        creditScore: post.user.creditScore,
+        avatar: post.user.photoUrl || null,
       },
-      comments: post.comments.map((comment) => ({
-        ...comment,
+      content: post.content,
+      likeCount: post.likes,
+      hasLiked,
+      commentCount: post.comments.length,
+      comments: sortedComments.map((comment) => ({
+        content: comment.content,
         author: {
           id: comment.user.id,
           firstName: comment.user.firstName,
           lastName: comment.user.lastName,
           email: comment.user.email,
-          photoUrl: comment.user.photoUrl,
-          creditScore: comment.user.creditScore,
+          avatar: comment.user.photoUrl || null,
         },
       })),
     };
@@ -170,14 +186,28 @@ export class CommunityService {
     return postWithAuthorInfo;
   }
 
-  async likePost(postId: string): Promise<Post> {
+  async likePost(postId: string, userId: string): Promise<Post> {
     const post = await this.postRepository.findOne({ where: { id: postId } });
     if (!post) {
       throw new NotFoundException('Post not found');
     }
 
-    post.likes += 1;
-    return await this.postRepository.save(post);
+    // Check if user already liked this post
+    const existingLike = await this.postLikeRepository.findOne({
+      where: { postId, userId },
+    });
+
+    if (!existingLike) {
+      // Create like record
+      const like = this.postLikeRepository.create({ postId, userId });
+      await this.postLikeRepository.save(like);
+
+      // Increment likes count
+      post.likes += 1;
+      await this.postRepository.save(post);
+    }
+
+    return post;
   }
 
   async dislikePost(postId: string): Promise<Post> {

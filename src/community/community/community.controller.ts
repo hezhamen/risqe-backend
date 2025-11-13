@@ -60,13 +60,16 @@ export class CommunityController {
   }
 
   @Get('posts/:id')
-  async getPostWithDetails(@Param('id') postId: string) {
-    return this.communityService.getPostWithDetails(postId);
+  async getPostWithDetails(
+    @Param('id') postId: string,
+    @GetUser() user: any,
+  ) {
+    return this.communityService.getPostWithDetails(postId, user.id);
   }
 
   @Post('posts/:id/like')
-  async likePost(@Param('id') postId: string) {
-    return this.communityService.likePost(postId);
+  async likePost(@Param('id') postId: string, @GetUser() user: any) {
+    return this.communityService.likePost(postId, user.id);
   }
 
   @Post('posts/:id/dislike')

@@ -4,6 +4,7 @@ import { Group } from '../rosca/group.entity';
 import { GroupMember } from '../rosca/group-member.entity';
 import { Post } from '../community/post.entity';
 import { Comment } from '../community/comment.entity';
+import { PostLike } from '../community/post-like.entity';
 import { GroupTransaction } from '../financials/group-transaction.entity';
 import { WithdrawalRequest } from '../financials/withdrawal-request.entity';
 import { GroupInvitation } from '../rosca/group-invitation.entity';
@@ -22,6 +23,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
     GroupMember,
     Post,
     Comment,
+    PostLike,
     GroupTransaction,
     WithdrawalRequest,
     GroupInvitation,
