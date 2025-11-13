@@ -1,6 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Post } from '../post.entity';
 import { Comment } from '../comment.entity';
 import { PostLike } from '../post-like.entity';
@@ -116,24 +116,50 @@ export class CommunityService {
     return await this.commentRepository.save(comment);
   }
 
-  async getAllPosts(): Promise<any[]> {
+  async getAllPosts(currentUserId?: string): Promise<any[]> {
     const posts = await this.postRepository.find({
       order: { createdAt: 'DESC' },
-      relations: ['user'],
+      relations: ['user', 'comments', 'comments.user'],
     });
 
-    // Aggregate posts with author information
-    return posts.map((post) => ({
-      ...post,
-      author: {
-        id: post.user.id,
-        firstName: post.user.firstName,
-        lastName: post.user.lastName,
-        email: post.user.email,
-        photoUrl: post.user.photoUrl,
-        creditScore: post.user.creditScore,
-      },
-    }));
+    // Get all post IDs to check likes in batch
+    const postIds = posts.map((post) => post.id);
+    const userLikes = currentUserId && postIds.length > 0
+      ? await this.postLikeRepository.find({
+          where: { userId: currentUserId, postId: In(postIds) },
+        })
+      : [];
+    const likedPostIds = new Set(userLikes.map((like) => like.postId));
+
+    // Aggregate posts with author information and details
+    return posts.map((post) => {
+      // Sort comments by createdAt (oldest first)
+      const sortedComments = [...post.comments].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+      );
+
+      return {
+        title: post.title,
+        author: {
+          id: post.user.id,
+          avatar: post.user.photoUrl || null,
+        },
+        content: post.content,
+        likeCount: post.likes,
+        hasLiked: currentUserId ? likedPostIds.has(post.id) : false,
+        commentCount: post.comments.length,
+        comments: sortedComments.map((comment) => ({
+          content: comment.content,
+          author: {
+            id: comment.user.id,
+            firstName: comment.user.firstName,
+            lastName: comment.user.lastName,
+            email: comment.user.email,
+            avatar: comment.user.photoUrl || null,
+          },
+        })),
+      };
+    });
   }
 
   async getPostWithDetails(postId: string, currentUserId?: string): Promise<any> {

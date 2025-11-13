@@ -55,8 +55,8 @@ export class CommunityController {
   }
 
   @Get('posts')
-  async getAllPosts() {
-    return this.communityService.getAllPosts();
+  async getAllPosts(@GetUser() user: any) {
+    return this.communityService.getAllPosts(user.id);
   }
 
   @Get('posts/:id')
