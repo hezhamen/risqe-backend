@@ -628,74 +628,98 @@ export class FinancialsService {
     // Handle calculated payments (virtual IDs starting with "calculated-")
     if (!transaction && transactionId.startsWith('calculated-')) {
       // Parse group ID and period number from virtual ID: "calculated-{groupId}-{periodNumber}"
-      const parts = transactionId.split('-');
-      if (parts.length >= 3) {
-        // UUID format: "calculated-{uuid}-{periodNumber}"
-        // Extract UUID (first 5 parts) and period number (last part)
-        const uuidParts = parts.slice(1, -1); // All parts except first and last
-        const groupId = uuidParts.join('-'); // Rejoin UUID parts
-        const periodNumber = parseInt(parts[parts.length - 1], 10);
-
-        const group = await this.groupRepository.findOne({
-          where: { id: groupId },
-        });
-
-        if (!group) {
-          throw new NotFoundException('Group not found');
-        }
-
-        if (!group.isActive) {
-          throw new BadRequestException('Group is not active');
-        }
-
-        // Verify user is a member of this group
-        const membership = await this.groupMemberRepository.findOne({
-          where: { groupId, userId, status: 'ACTIVE' },
-        });
-
-        if (!membership) {
-          throw new BadRequestException(
-            'You are not a member of this group',
-          );
-        }
-
-        // Get active members count
-        const activeMembers = await this.groupMemberRepository.count({
-          where: { groupId, status: 'ACTIVE' },
-        });
-
-        if (activeMembers === 0) {
-          throw new BadRequestException('Group has no active members');
-        }
-
-        // Calculate payment amount
-        const paymentAmount = Number(group.totalFundTarget) / activeMembers;
-
-        // Calculate due date
-        const dueDate = this.calculateNextPaymentDue(
-          group.createdAt,
-          group.frequency || 'month',
-          periodNumber,
+      // UUID format: "calculated-{uuid}-{periodNumber}"
+      // Example: "calculated-550e8400-e29b-41d4-a716-446655440000-3"
+      const calculatedPrefix = 'calculated-';
+      const withoutPrefix = transactionId.substring(calculatedPrefix.length);
+      
+      // Find the last dash and extract period number (should be at the end)
+      const lastDashIndex = withoutPrefix.lastIndexOf('-');
+      if (lastDashIndex === -1) {
+        throw new BadRequestException(
+          'Invalid calculated transaction ID format. Expected: calculated-{groupId}-{periodNumber}',
         );
+      }
 
-        // Create the transaction record
-        transaction = this.transactionRepository.create({
-          groupId,
-          userId,
-          amount: paymentAmount,
-          type: 'PAYMENT',
-          status: 'PENDING',
-          description: `Payment due for ${group.name} - Period ${periodNumber}`,
-          dueDate: dueDate,
-        });
+      const groupId = withoutPrefix.substring(0, lastDashIndex);
+      const periodNumberStr = withoutPrefix.substring(lastDashIndex + 1);
+      const periodNumber = parseInt(periodNumberStr, 10);
 
-        await this.transactionRepository.save(transaction);
+      if (isNaN(periodNumber) || periodNumber < 1) {
+        throw new BadRequestException(
+          `Invalid period number: ${periodNumberStr}. Must be a positive integer.`,
+        );
+      }
 
-        // Reload with relations
-        transaction = await this.transactionRepository.findOne({
-          where: { id: transaction.id },
-          relations: ['user', 'group'],
-        });
+      if (!groupId || groupId.length === 0) {
+        throw new BadRequestException('Group ID is missing from calculated transaction ID');
+      }
+
+      const group = await this.groupRepository.findOne({
+        where: { id: groupId },
+      });
+
+      if (!group) {
+        throw new NotFoundException('Group not found');
+      }
+
+      if (!group.isActive) {
+        throw new BadRequestException('Group is not active');
+      }
+
+      // Verify user is a member of this group
+      const membership = await this.groupMemberRepository.findOne({
+        where: { groupId, userId, status: 'ACTIVE' },
+      });
+
+      if (!membership) {
+        throw new BadRequestException(
+          'You are not a member of this group',
+        );
+      }
+
+      // Get active members count
+      const activeMembers = await this.groupMemberRepository.count({
+        where: { groupId, status: 'ACTIVE' },
+      });
+
+      if (activeMembers === 0) {
+        throw new BadRequestException('Group has no active members');
+      }
+
+      // Calculate payment amount
+      const paymentAmount = Number(group.totalFundTarget) / activeMembers;
+
+      // Calculate due date
+      const dueDate = this.calculateNextPaymentDue(
+        group.createdAt,
+        group.frequency || 'month',
+        periodNumber,
+      );
+
+      // Create the transaction record
+      transaction = this.transactionRepository.create({
+        groupId,
+        userId,
+        amount: paymentAmount,
+        type: 'PAYMENT',
+        status: 'PENDING',
+        description: `Payment due for ${group.name} - Period ${periodNumber}`,
+        dueDate: dueDate,
+      });
+
+      await this.transactionRepository.save(transaction);
+
+      // Reload with relations
+      transaction = await this.transactionRepository.findOne({
+        where: { id: transaction.id },
+        relations: ['user', 'group'],
+      });
+
+      if (!transaction) {
+        throw new NotFoundException(
+          'Failed to create transaction for calculated payment',
+        );
       }
     }
 
