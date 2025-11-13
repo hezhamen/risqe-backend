@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, In } from 'typeorm';
 import { Group } from '../group.entity';
 import { GroupMember } from '../group-member.entity';
+import { GroupInvitation, InvitationStatus } from '../group-invitation.entity';
 import { GroupTransaction } from '../../financials/group-transaction.entity';
 import { User } from '../../user/user.entity';
 import {
@@ -24,6 +25,8 @@ export class RoscaService {
     private groupRepository: Repository<Group>,
     @InjectRepository(GroupMember)
     private memberRepository: Repository<GroupMember>,
+    @InjectRepository(GroupInvitation)
+    private invitationRepository: Repository<GroupInvitation>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(GroupTransaction)
@@ -61,7 +64,7 @@ export class RoscaService {
       });
       await manager.save(adminMember);
 
-      // 3. Validate and add other members if provided
+      // 3. Validate and create invitations for other members if provided
       if (members && members.length > 0) {
         // Extract unique userIds from members array
         const memberUserIds = members.map((m) => m.userId);
@@ -135,26 +138,171 @@ export class RoscaService {
           );
         }
 
-        // Add members to the group
+        // 4. Calculate invitation cost: 250 IQD per member
+        const invitationCost = uniqueMemberUserIds.length * 250;
+        const adminUserEntity = await manager.findOne(User, {
+          where: { id: adminId },
+        });
+
+        if (!adminUserEntity) {
+          throw new BadRequestException('Admin user not found');
+        }
+
+        // Check if creator has sufficient balance
+        if (adminUserEntity.internalBalance < invitationCost) {
+          throw new BadRequestException(
+            `Insufficient balance. Required: ${invitationCost} IQD, Available: ${adminUserEntity.internalBalance} IQD`,
+          );
+        }
+
+        // 5. Charge the creator for invitations
+        await manager.decrement(
+          User,
+          { id: adminId },
+          'internalBalance',
+          invitationCost,
+        );
+
+        // 6. Create invitations for all members
         for (const userId of uniqueMemberUserIds) {
-          const existingMember = await manager.findOne(GroupMember, {
-            where: { groupId: savedGroup.id, userId },
+          // Check if invitation already exists
+          const existingInvitation = await manager.findOne(GroupInvitation, {
+            where: {
+              groupId: savedGroup.id,
+              invitedUserId: userId,
+              status: InvitationStatus.PENDING,
+            },
           });
 
-          if (!existingMember) {
-            const groupMember = manager.create(GroupMember, {
+          if (!existingInvitation) {
+            const invitation = manager.create(GroupInvitation, {
               groupId: savedGroup.id,
-              userId,
-              is_admin: false,
-              status: 'ACTIVE',
+              invitedUserId: userId,
+              invitedByUserId: adminId,
+              status: InvitationStatus.PENDING,
             });
-            await manager.save(groupMember);
+            await manager.save(invitation);
           }
+        }
+
+        // Store memberOrder in group entity for ORDERED_LIST payout type
+        if (createGroupDto.payoutType === 'ORDERED_LIST' && memberOrder) {
+          savedGroup.memberOrder = memberOrder;
+          await manager.save(savedGroup);
         }
       }
 
       return savedGroup;
     });
+  }
+
+  async respondToInvitation(
+    userId: string,
+    invitationId: string,
+    action: 'accept' | 'reject',
+  ): Promise<{
+    success: boolean;
+    message: string;
+    invitationId: string;
+  }> {
+    return this.dataSource.transaction(async (manager) => {
+      const invitation = await manager.findOne(GroupInvitation, {
+        where: { id: invitationId },
+        relations: ['group', 'invitedUser'],
+      });
+
+      if (!invitation) {
+        throw new NotFoundException('Invitation not found');
+      }
+
+      // Verify the invitation belongs to the user
+      if (invitation.invitedUserId !== userId) {
+        throw new BadRequestException(
+          'You are not authorized to respond to this invitation',
+        );
+      }
+
+      // Check if invitation is still pending
+      if (invitation.status !== InvitationStatus.PENDING) {
+        throw new BadRequestException(
+          `Invitation has already been ${invitation.status.toLowerCase()}`,
+        );
+      }
+
+      if (action === 'accept') {
+        // Check if user is already a member
+        const existingMember = await manager.findOne(GroupMember, {
+          where: {
+            groupId: invitation.groupId,
+            userId: invitation.invitedUserId,
+          },
+        });
+
+        if (existingMember) {
+          throw new BadRequestException('You are already a member of this group');
+        }
+
+        // Add user as a group member
+        const groupMember = manager.create(GroupMember, {
+          groupId: invitation.groupId,
+          userId: invitation.invitedUserId,
+          is_admin: false,
+          status: 'ACTIVE',
+        });
+        await manager.save(groupMember);
+
+        // Update invitation status
+        invitation.status = InvitationStatus.ACCEPTED;
+        invitation.respondedAt = new Date();
+        await manager.save(invitation);
+
+        return {
+          success: true,
+          message: 'Invitation accepted successfully',
+          invitationId: invitation.id,
+        };
+      } else {
+        // Reject invitation
+        invitation.status = InvitationStatus.REJECTED;
+        invitation.respondedAt = new Date();
+        await manager.save(invitation);
+
+        return {
+          success: true,
+          message: 'Invitation rejected',
+          invitationId: invitation.id,
+        };
+      }
+    });
+  }
+
+  async getPendingInvitations(userId: string): Promise<
+    Array<{
+      id: string;
+      groupId: string;
+      groupName: string;
+      invitedByUserId: string;
+      invitedByName: string;
+      createdAt: Date;
+    }>
+  > {
+    const invitations = await this.invitationRepository.find({
+      where: {
+        invitedUserId: userId,
+        status: InvitationStatus.PENDING,
+      },
+      relations: ['group', 'invitedByUser'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return invitations.map((invitation) => ({
+      id: invitation.id,
+      groupId: invitation.groupId,
+      groupName: invitation.group.name,
+      invitedByUserId: invitation.invitedByUserId,
+      invitedByName: `${invitation.invitedByUser.firstName} ${invitation.invitedByUser.lastName}`,
+      createdAt: invitation.createdAt,
+    }));
   }
 
   async joinGroup(

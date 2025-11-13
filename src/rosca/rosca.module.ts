@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from './group.entity';
 import { GroupMember } from './group-member.entity';
+import { GroupInvitation } from './group-invitation.entity';
 import { GroupTransaction } from '../financials/group-transaction.entity';
 import { UserModule } from '../user/user.module';
 import { User } from '../user/user.entity';
@@ -10,7 +11,7 @@ import { RoscaController } from './rosca/rosca.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Group, GroupMember, User, GroupTransaction]),
+    TypeOrmModule.forFeature([Group, GroupMember, GroupInvitation, User, GroupTransaction]),
     UserModule,
   ],
   providers: [RoscaService],

@@ -6,6 +6,7 @@ import { Post } from '../community/post.entity';
 import { Comment } from '../community/comment.entity';
 import { GroupTransaction } from '../financials/group-transaction.entity';
 import { WithdrawalRequest } from '../financials/withdrawal-request.entity';
+import { GroupInvitation } from '../rosca/group-invitation.entity';
 
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -23,6 +24,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
     Comment,
     GroupTransaction,
     WithdrawalRequest,
+    GroupInvitation,
   ],
   synchronize: true, // Enable for initial deployment - should use migrations in production
   ssl:

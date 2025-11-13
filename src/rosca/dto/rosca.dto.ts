@@ -131,3 +131,22 @@ export class InviteMemberDto {
   @IsNotEmpty()
   email: string;
 }
+
+export class RespondToInvitationDto {
+  @ApiProperty({
+    description: 'Invitation ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  invitationId: string;
+
+  @ApiProperty({
+    description: 'Response action',
+    enum: ['accept', 'reject'],
+    example: 'accept',
+  })
+  @IsEnum(['accept', 'reject'])
+  @IsNotEmpty()
+  action: 'accept' | 'reject';
+}

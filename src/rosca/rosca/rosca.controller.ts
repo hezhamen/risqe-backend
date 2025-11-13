@@ -21,6 +21,7 @@ import {
   JoinGroupDto,
   VoteOnPayoutDto,
   InviteMemberDto,
+  RespondToInvitationDto,
 } from '../dto/rosca.dto';
 import { JwtAuthGuard } from '../../user/auth/jwt-auth.guard';
 import { GetUser } from '../../user/auth/get-user.decorator';
@@ -354,6 +355,68 @@ export class RoscaController {
       groupId,
       limit ? parseInt(limit.toString(), 10) : 50,
       offset ? parseInt(offset.toString(), 10) : 0,
+    );
+  }
+
+  @Get('invitations')
+  @ApiOperation({
+    summary: 'Get pending group invitations',
+    description:
+      'Get all pending group invitations for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of pending invitations',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'uuid-string' },
+          groupId: { type: 'string', example: 'uuid-string' },
+          groupName: { type: 'string', example: 'Erbil Savings Group' },
+          invitedByUserId: { type: 'string', example: 'uuid-string' },
+          invitedByName: { type: 'string', example: 'John Doe' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getPendingInvitations(@GetUser() user: any) {
+    return this.roscaService.getPendingInvitations(user.id);
+  }
+
+  @Post('invitations/respond')
+  @ApiOperation({
+    summary: 'Accept or reject a group invitation',
+    description:
+      'Accept or reject a pending group invitation. Accepting adds the user as a group member.',
+  })
+  @ApiBody({ type: RespondToInvitationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Invitation response processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Invitation accepted successfully' },
+        invitationId: { type: 'string', example: 'uuid-string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid invitation or already responded' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Invitation not found' })
+  async respondToInvitation(
+    @GetUser() user: any,
+    @Body(ValidationPipe) respondDto: RespondToInvitationDto,
+  ) {
+    return this.roscaService.respondToInvitation(
+      user.id,
+      respondDto.invitationId,
+      respondDto.action,
     );
   }
 }

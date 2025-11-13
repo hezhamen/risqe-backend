@@ -30,6 +30,9 @@ export class Group {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'json', nullable: true })
+  memberOrder?: string[] | null; // Array of user IDs for ORDERED_LIST payout type
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
