@@ -24,6 +24,7 @@ import {
 } from '../dto/auth.dto';
 import { PhoneService } from '../phone/phone.service';
 import { CollateralDocument } from '../collateral-document.entity';
+import { StorageService } from '../../shared/storage/storage.service';
 
 export interface UserProfileResponse {
   id: string;
@@ -44,6 +45,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly phoneService: PhoneService,
     private readonly httpService: HttpService,
+    private readonly storageService: StorageService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{ access_token: string }> {
@@ -423,7 +425,7 @@ export class AuthService {
   async uploadCollateralDocument(
     userId: string,
     documentType: 'house' | 'car',
-    documentUrl: string,
+    file: Express.Multer.File,
   ): Promise<{
     success: boolean;
     message: string;
@@ -431,7 +433,19 @@ export class AuthService {
     documentType: string;
     status: string;
     uploadedAt: Date;
+    documentUrl: string;
   }> {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    // Upload to S3
+    const documentUrl = await this.storageService.uploadFile(
+      file,
+      'documents',
+      file.originalname,
+    );
+
     const document = this.collateralDocumentRepository.create({
       userId,
       documentType,
@@ -450,6 +464,66 @@ export class AuthService {
       documentType: savedDocument.documentType,
       status: savedDocument.status,
       uploadedAt: savedDocument.uploadedAt,
+      documentUrl: savedDocument.documentUrl || documentUrl,
+    };
+  }
+
+  async uploadAvatar(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    photoUrl: string;
+  }> {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.',
+      );
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size exceeds 5MB limit');
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Delete old avatar if exists
+    if (user.photoUrl) {
+      try {
+        await this.storageService.deleteFile(user.photoUrl);
+      } catch (error) {
+        // Log error but don't fail the upload
+        Logger.warn(`Failed to delete old avatar: ${error.message}`, 'AuthService');
+      }
+    }
+
+    // Upload new avatar to S3
+    const photoUrl = await this.storageService.uploadFile(
+      file,
+      'avatars',
+      file.originalname,
+    );
+
+    // Update user photoUrl
+    user.photoUrl = photoUrl;
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      message: 'Avatar uploaded successfully',
+      photoUrl,
     };
   }
 

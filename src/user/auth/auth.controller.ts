@@ -9,6 +9,7 @@ import {
   Request,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -376,12 +377,63 @@ export class AuthController {
     @Body() uploadCollateralDto: UploadCollateralDto,
     @UploadedFile() file: Express.Multer.File | undefined,
   ) {
-    const documentUrl = file ? `/uploads/${file.filename}` : '';
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
     return this.authService.uploadCollateralDocument(
       user.id,
       uploadCollateralDto.documentType,
-      documentUrl,
+      file,
     );
+  }
+
+  @Post('profile/avatar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('avatar'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload user avatar',
+    description:
+      'Upload a profile picture/avatar for the authenticated user. Accepts JPEG, PNG, GIF, or WebP images up to 5MB.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        avatar: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['avatar'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Avatar uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Avatar uploaded successfully' },
+        photoUrl: {
+          type: 'string',
+          example: 'https://bucketeer-xxx.s3.eu-west-1.amazonaws.com/avatars/uuid.jpg',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid file type or size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async uploadAvatar(
+    @GetUser() user: any,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+    return this.authService.uploadAvatar(user.id, file);
   }
 
   @Get('collateral/documents')

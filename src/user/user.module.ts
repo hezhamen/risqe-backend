@@ -11,6 +11,7 @@ import { AuthController } from './auth/auth.controller';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { PhoneController } from './phone/phone.controller';
 import { PhoneService } from './phone/phone.service';
+import { StorageModule } from '../shared/storage/storage.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PhoneService } from './phone/phone.service';
     }),
     PassportModule,
     HttpModule,
+    StorageModule,
   ],
   providers: [AuthService, JwtAuthGuard, JwtStrategy, PhoneService],
   controllers: [AuthController, PhoneController],
