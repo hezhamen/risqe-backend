@@ -62,19 +62,15 @@ export class StorageService {
     const contentType = this.getContentType(filename);
 
     try {
-      const uploadParams: any = {
+      // Bucketeer buckets don't support ACLs and are public by default
+      // Don't set ACL parameter to avoid "The bucket does not allow ACLs" error
+      const uploadParams = {
         Bucket: this.bucketName,
         Key: key,
         Body: fileBuffer,
         ContentType: contentType,
+        // Note: Bucketeer buckets are public by default, no ACL needed
       };
-
-      // Try to set ACL if supported (some S3-compatible services don't support ACL)
-      try {
-        uploadParams.ACL = 'public-read';
-      } catch {
-        // ACL not supported, skip it
-      }
 
       const upload = new Upload({
         client: this.s3Client,
