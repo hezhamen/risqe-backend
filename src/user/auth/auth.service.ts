@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import * as bcrypt from 'bcrypt';
 import { User } from '../user.entity';
@@ -488,6 +488,143 @@ export class AuthService {
         email: user.email || email,
         photoUrl: user.photoUrl,
         creditScore: user.creditScore,
+      },
+    };
+  }
+
+  async searchUser(query: string): Promise<
+    Array<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phoneNumber: string;
+      photoUrl: string | null;
+      creditScore: number;
+      hasAccount: boolean;
+    }>
+  > {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return [];
+    }
+
+    // Detect search type
+    if (trimmedQuery.includes('@')) {
+      // Email search - exact match or contains
+      const users = await this.userRepository.find({
+        where: { email: ILike(`%${trimmedQuery}%`) },
+        take: 10,
+      });
+
+      return users.map((user) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email ?? null,
+        phoneNumber: user.phoneNumber,
+        photoUrl: user.photoUrl ?? null,
+        creditScore: user.creditScore,
+        hasAccount: true,
+      }));
+    }
+
+    // Check if it's a phone number (digits with optional + prefix)
+    const phonePattern = /^\+?[0-9\s-]+$/;
+    const normalizedPhone = trimmedQuery.replace(/[\s-]/g, '');
+    if (phonePattern.test(normalizedPhone)) {
+      // Phone search - normalize and match
+      const phoneToSearch = normalizedPhone.startsWith('+')
+        ? normalizedPhone
+        : `+${normalizedPhone}`;
+
+      const user = await this.userRepository.findOne({
+        where: { phoneNumber: phoneToSearch },
+      });
+
+      if (!user) {
+        return [];
+      }
+
+      return [
+        {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email ?? null,
+          phoneNumber: user.phoneNumber,
+          photoUrl: user.photoUrl ?? null,
+          creditScore: user.creditScore,
+          hasAccount: true,
+        },
+      ];
+    }
+
+    // Name search - requires at least 2 characters
+    if (trimmedQuery.length < 2) {
+      return [];
+    }
+
+    // Search in firstName, lastName, or full name
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.firstName ILIKE :query', { query: `%${trimmedQuery}%` })
+      .orWhere('user.lastName ILIKE :query', { query: `%${trimmedQuery}%` })
+      .orWhere("CONCAT(user.firstName, ' ', user.lastName) ILIKE :query", {
+        query: `%${trimmedQuery}%`,
+      })
+      .limit(10)
+      .getMany();
+
+    return users.map((user) => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email ?? null,
+      phoneNumber: user.phoneNumber,
+      photoUrl: user.photoUrl ?? null,
+      creditScore: user.creditScore,
+      hasAccount: true,
+    }));
+  }
+
+  async checkUserByPhone(phoneNumber: string): Promise<{
+    exists: boolean;
+    user?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string | null;
+      phoneNumber: string;
+      photoUrl: string | null;
+      creditScore: number;
+      hasAccount: boolean;
+    };
+    message?: string;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { phoneNumber },
+    });
+
+    if (!user) {
+      throw new NotFoundException({
+        exists: false,
+        message: 'User not found',
+      });
+    }
+
+    return {
+      exists: true,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email ?? null,
+        phoneNumber: user.phoneNumber,
+        photoUrl: user.photoUrl ?? null,
+        creditScore: user.creditScore,
+        hasAccount: true,
       },
     };
   }

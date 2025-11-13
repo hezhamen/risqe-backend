@@ -9,27 +9,19 @@ import {
   IsEmail,
   ValidateNested,
   MinLength,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateGroupMemberDto {
   @ApiProperty({
-    description: 'Email address of the member',
-    example: 'member@example.com',
+    description: 'Unique identifier of the user to add as a member',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @IsEmail()
+  @IsUUID()
   @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({
-    description: 'Name of the member',
-    example: 'John Doe',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  name?: string;
+  userId: string;
 }
 
 export class CreateGroupDto {
@@ -89,12 +81,14 @@ export class CreateGroupDto {
   members: CreateGroupMemberDto[];
 
   @ApiProperty({
-    description: 'Ordered list of member IDs for payout order (for ordered list payout type)',
+    description:
+      'Ordered list of user IDs for payout order. Required for ORDERED_LIST payout type. Should match the userIds in the members array (excluding creator).',
     type: [String],
     required: false,
+    example: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002'],
   })
   @IsArray()
-  @IsString({ each: true })
+  @IsUUID(undefined, { each: true })
   @IsOptional()
   memberOrder?: string[];
 }

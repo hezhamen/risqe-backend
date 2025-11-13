@@ -32,6 +32,8 @@ import {
   VerifyPhoneChangeDto,
   UploadCollateralDto,
   CheckUserByEmailDto,
+  UserSearchDto,
+  CheckUserByPhoneDto,
 } from '../dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { GetUser } from './get-user.decorator';
@@ -469,5 +471,98 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request - invalid email format' })
   async checkUserByEmail(@Body(ValidationPipe) checkUserDto: CheckUserByEmailDto) {
     return this.authService.checkUserByEmail(checkUserDto.email);
+  }
+
+  @Post('user/search')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Search for users by email, name, or phone number',
+    description: `Search for users in the system. The endpoint automatically detects the search type:
+- Email: Contains '@' symbol
+- Phone: Contains only digits (with optional + prefix)
+- Name: Any other text (requires at least 2 characters)
+
+Returns a list of matching users. For email and phone searches, typically returns a single user. For name searches, may return multiple users.`,
+  })
+  @ApiBody({ type: UserSearchDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Search successful - returns array of users',
+    schema: {
+      oneOf: [
+        {
+          type: 'array',
+          description: 'Array of user results',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
+              firstName: { type: 'string', example: 'John' },
+              lastName: { type: 'string', example: 'Doe' },
+              email: { type: 'string', nullable: true, example: 'john.doe@example.com' },
+              phoneNumber: { type: 'string', example: '+9647721272183' },
+              photoUrl: { type: 'string', nullable: true, example: 'https://example.com/avatar.jpg' },
+              creditScore: { type: 'number', example: 750, minimum: 0, maximum: 1000 },
+              hasAccount: { type: 'boolean', example: true },
+            },
+            required: ['id', 'firstName', 'lastName', 'phoneNumber', 'creditScore', 'hasAccount'],
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid query format' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid or missing authentication token' })
+  async searchUser(@Body(ValidationPipe) searchDto: UserSearchDto) {
+    return this.authService.searchUser(searchDto.query);
+  }
+
+  @Post('user/check-phone')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Check if user exists by phone number',
+    description: 'Check if a user exists in the system by their phone number. This is used internally by the search endpoint but can also be called directly.',
+  })
+  @ApiBody({ type: CheckUserByPhoneDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User found',
+    schema: {
+      type: 'object',
+      properties: {
+        exists: { type: 'boolean', example: true },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid', example: '550e8400-e29b-41d4-a716-446655440000' },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            email: { type: 'string', nullable: true, example: 'john.doe@example.com' },
+            phoneNumber: { type: 'string', example: '+9647721272183' },
+            photoUrl: { type: 'string', nullable: true, example: 'https://example.com/avatar.jpg' },
+            creditScore: { type: 'number', example: 750, minimum: 0, maximum: 1000 },
+            hasAccount: { type: 'boolean', example: true },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        exists: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'User not found' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid phone number format' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async checkUserByPhone(@Body(ValidationPipe) checkPhoneDto: CheckUserByPhoneDto) {
+    return this.authService.checkUserByPhone(checkPhoneDto.phoneNumber);
   }
 }

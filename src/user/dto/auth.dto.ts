@@ -234,3 +234,26 @@ export class CheckUserByEmailDto {
   @IsNotEmpty()
   email: string;
 }
+
+export class UserSearchDto {
+  @ApiProperty({
+    description: 'Search query (email, name, or phone number)',
+    example: 'john.doe@example.com',
+    minLength: 1,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  query: string;
+}
+
+export class CheckUserByPhoneDto {
+  @ApiProperty({
+    description: 'Phone number in international format (E.164)',
+    example: '+9647721272183',
+    pattern: '^\\+[1-9]\\d{1,14}$',
+  })
+  @IsPhoneNumber()
+  @IsNotEmpty()
+  phoneNumber: string;
+}

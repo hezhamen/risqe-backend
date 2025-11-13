@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, In } from 'typeorm';
 import { Group } from '../group.entity';
 import { GroupMember } from '../group-member.entity';
 import { GroupTransaction } from '../../financials/group-transaction.entity';
@@ -61,27 +61,94 @@ export class RoscaService {
       });
       await manager.save(adminMember);
 
-      // 3. Add other members if provided
+      // 3. Validate and add other members if provided
       if (members && members.length > 0) {
-        for (const memberDto of members) {
-          const memberUser = await this.userRepository.findOne({
-            where: { email: memberDto.email },
+        // Extract unique userIds from members array
+        const memberUserIds = members.map((m) => m.userId);
+        const uniqueMemberUserIds = [...new Set(memberUserIds)];
+
+        // Check for duplicate userIds in members array
+        if (memberUserIds.length !== uniqueMemberUserIds.length) {
+          throw new BadRequestException('Duplicate user IDs in members array');
+        }
+
+        // Check if admin is included in members (should not be)
+        if (memberUserIds.includes(adminId)) {
+          throw new BadRequestException(
+            'Creator cannot be included in members array',
+          );
+        }
+
+        // Validate that all userIds exist
+        const memberUsers = await this.userRepository.find({
+          where: { id: In(uniqueMemberUserIds) },
+        });
+        const foundUserIds = memberUsers.map((u) => u.id);
+        const missingUserIds = uniqueMemberUserIds.filter(
+          (id) => !foundUserIds.includes(id),
+        );
+
+        if (missingUserIds.length > 0) {
+          throw new NotFoundException({
+            message: 'One or more user IDs not found',
+            details: missingUserIds.map((userId) => ({
+              userId,
+              error: 'User not found',
+            })),
+          });
+        }
+
+        // Validate memberOrder if provided
+        if (memberOrder && memberOrder.length > 0) {
+          if (createGroupDto.payoutType === 'ORDERED_LIST') {
+            // Check that all memberOrder userIds are in members array
+            const memberOrderSet = new Set(memberOrder);
+            const membersSet = new Set(uniqueMemberUserIds);
+            const invalidOrderUserIds = memberOrder.filter(
+              (id) => !membersSet.has(id),
+            );
+
+            if (invalidOrderUserIds.length > 0) {
+              throw new BadRequestException(
+                `memberOrder contains userIds not in members array: ${invalidOrderUserIds.join(', ')}`,
+              );
+            }
+
+            // Check that all members are in memberOrder
+            const missingInOrder = uniqueMemberUserIds.filter(
+              (id) => !memberOrderSet.has(id),
+            );
+            if (missingInOrder.length > 0) {
+              throw new BadRequestException(
+                `All members must be included in memberOrder. Missing: ${missingInOrder.join(', ')}`,
+              );
+            }
+
+            // Check for duplicates in memberOrder
+            if (memberOrder.length !== memberOrderSet.size) {
+              throw new BadRequestException('Duplicate userIds in memberOrder');
+            }
+          }
+        } else if (createGroupDto.payoutType === 'ORDERED_LIST') {
+          throw new BadRequestException(
+            'memberOrder is required for ORDERED_LIST payout type',
+          );
+        }
+
+        // Add members to the group
+        for (const userId of uniqueMemberUserIds) {
+          const existingMember = await manager.findOne(GroupMember, {
+            where: { groupId: savedGroup.id, userId },
           });
 
-          if (memberUser && memberUser.id !== adminId) {
-            const existingMember = await manager.findOne(GroupMember, {
-              where: { groupId: savedGroup.id, userId: memberUser.id },
+          if (!existingMember) {
+            const groupMember = manager.create(GroupMember, {
+              groupId: savedGroup.id,
+              userId,
+              is_admin: false,
+              status: 'ACTIVE',
             });
-
-            if (!existingMember) {
-              const groupMember = manager.create(GroupMember, {
-                groupId: savedGroup.id,
-                userId: memberUser.id,
-                is_admin: false,
-                status: 'ACTIVE',
-              });
-              await manager.save(groupMember);
-            }
+            await manager.save(groupMember);
           }
         }
       }
