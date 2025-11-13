@@ -467,6 +467,7 @@ export class FinancialsService {
   /**
    * Get payments due for a user
    * Returns ALL PENDING GROUP_PAYMENT transactions (including future-due payments)
+   * Also calculates future payments on-the-fly from group data if transactions don't exist
    * Allows users to see and pay early payments
    */
   async getPaymentsDue(userId: string): Promise<
@@ -482,34 +483,127 @@ export class FinancialsService {
     }>
   > {
     // Get ALL pending GROUP_PAYMENT transactions, regardless of due date
-    // This includes both current and future-due payments for early payment support
-    const transactions = await this.transactionRepository.find({
+    const existingTransactions = await this.transactionRepository.find({
       where: {
         userId,
         type: 'PAYMENT',
         status: 'PENDING',
       },
       relations: ['group'],
-      order: { createdAt: 'ASC' }, // Order by createdAt (will be updated to dueDate once all records have dueDate)
     });
 
-    // Sort by dueDate if available, otherwise by createdAt
-    transactions.sort((a, b) => {
-      const aDate = a.dueDate || a.createdAt;
-      const bDate = b.dueDate || b.createdAt;
-      return aDate.getTime() - bDate.getTime();
+    // Get all groups the user is an active member of
+    const userMemberships = await this.groupMemberRepository.find({
+      where: {
+        userId,
+        status: 'ACTIVE',
+      },
+      relations: ['group'],
     });
 
-    return transactions.map((transaction) => ({
-      id: transaction.id,
-      type: 'GROUP_PAYMENT',
-      amount: transaction.amount,
-      status: transaction.status,
-      groupId: transaction.groupId || null,
-      groupName: transaction.group?.name || null,
-      createdAt: transaction.createdAt,
-      dueDate: transaction.dueDate || transaction.createdAt, // Use dueDate if available, fallback to createdAt
-    }));
+    const now = new Date();
+    const calculatedPayments: Array<{
+      id: string;
+      type: string;
+      amount: number;
+      status: string;
+      groupId: string | null;
+      groupName: string | null;
+      createdAt: Date;
+      dueDate: Date;
+    }> = [];
+
+    // For each group membership, calculate future payment periods
+    for (const membership of userMemberships) {
+      const group = membership.group;
+
+      if (!group.isActive) {
+        continue; // Skip inactive groups
+      }
+
+      // Get active members count for this group
+      const activeMembers = await this.groupMemberRepository.count({
+        where: { groupId: group.id, status: 'ACTIVE' },
+      });
+
+      if (activeMembers === 0) {
+        continue; // Skip groups with no active members
+      }
+
+      // Calculate payment amount per member
+      const paymentAmount = Number(group.totalFundTarget) / activeMembers;
+
+      // Get existing transactions for this group to see which periods are already covered
+      const groupTransactions = existingTransactions.filter(
+        (t) => t.groupId === group.id,
+      );
+
+      // Calculate future payment periods (up to 12 periods ahead)
+      const maxPeriods = 12;
+      for (let periodNumber = 1; periodNumber <= maxPeriods; periodNumber++) {
+        const dueDate = this.calculateNextPaymentDue(
+          group.createdAt,
+          group.frequency || 'month',
+          periodNumber,
+        );
+
+        // Skip if payment is too far in the past (more than 1 period overdue)
+        const onePeriodAgo = this.calculateNextPaymentDue(
+          group.createdAt,
+          group.frequency || 'month',
+          Math.max(1, periodNumber - 1),
+        );
+        if (dueDate < onePeriodAgo && dueDate < now) {
+          continue; // Skip very old periods
+        }
+
+        // Check if transaction already exists for this period
+        // We match by checking if there's a transaction with similar dueDate (within 1 day)
+        const hasExistingTransaction = groupTransactions.some((t) => {
+          const tDueDate = t.dueDate || t.createdAt;
+          const daysDiff = Math.abs(
+            (dueDate.getTime() - tDueDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          return daysDiff < 1; // Within 1 day
+        });
+
+        if (!hasExistingTransaction) {
+          // Create a virtual transaction entry for this calculated payment
+          calculatedPayments.push({
+            id: `calculated-${group.id}-${periodNumber}`, // Virtual ID
+            type: 'GROUP_PAYMENT',
+            amount: paymentAmount,
+            status: 'PENDING',
+            groupId: group.id,
+            groupName: group.name,
+            createdAt: now, // When we calculated it
+            dueDate: dueDate,
+          });
+        }
+      }
+    }
+
+    // Combine existing transactions with calculated payments
+    const allPayments = [
+      ...existingTransactions.map((transaction) => ({
+        id: transaction.id,
+        type: 'GROUP_PAYMENT',
+        amount: transaction.amount,
+        status: transaction.status,
+        groupId: transaction.groupId || null,
+        groupName: transaction.group?.name || null,
+        createdAt: transaction.createdAt,
+        dueDate: transaction.dueDate || transaction.createdAt,
+      })),
+      ...calculatedPayments,
+    ];
+
+    // Sort by dueDate (earliest first)
+    allPayments.sort((a, b) => {
+      return a.dueDate.getTime() - b.dueDate.getTime();
+    });
+
+    return allPayments;
   }
 
   /**
@@ -526,10 +620,84 @@ export class FinancialsService {
     transactionId: string;
     newBalance: number;
   }> {
-    const transaction = await this.transactionRepository.findOne({
+    let transaction = await this.transactionRepository.findOne({
       where: { id: transactionId },
       relations: ['user', 'group'],
     });
+
+    // Handle calculated payments (virtual IDs starting with "calculated-")
+    if (!transaction && transactionId.startsWith('calculated-')) {
+      // Parse group ID and period number from virtual ID: "calculated-{groupId}-{periodNumber}"
+      const parts = transactionId.split('-');
+      if (parts.length >= 3) {
+        // UUID format: "calculated-{uuid}-{periodNumber}"
+        // Extract UUID (first 5 parts) and period number (last part)
+        const uuidParts = parts.slice(1, -1); // All parts except first and last
+        const groupId = uuidParts.join('-'); // Rejoin UUID parts
+        const periodNumber = parseInt(parts[parts.length - 1], 10);
+
+        const group = await this.groupRepository.findOne({
+          where: { id: groupId },
+        });
+
+        if (!group) {
+          throw new NotFoundException('Group not found');
+        }
+
+        if (!group.isActive) {
+          throw new BadRequestException('Group is not active');
+        }
+
+        // Verify user is a member of this group
+        const membership = await this.groupMemberRepository.findOne({
+          where: { groupId, userId, status: 'ACTIVE' },
+        });
+
+        if (!membership) {
+          throw new BadRequestException(
+            'You are not a member of this group',
+          );
+        }
+
+        // Get active members count
+        const activeMembers = await this.groupMemberRepository.count({
+          where: { groupId, status: 'ACTIVE' },
+        });
+
+        if (activeMembers === 0) {
+          throw new BadRequestException('Group has no active members');
+        }
+
+        // Calculate payment amount
+        const paymentAmount = Number(group.totalFundTarget) / activeMembers;
+
+        // Calculate due date
+        const dueDate = this.calculateNextPaymentDue(
+          group.createdAt,
+          group.frequency || 'month',
+          periodNumber,
+        );
+
+        // Create the transaction record
+        transaction = this.transactionRepository.create({
+          groupId,
+          userId,
+          amount: paymentAmount,
+          type: 'PAYMENT',
+          status: 'PENDING',
+          description: `Payment due for ${group.name} - Period ${periodNumber}`,
+          dueDate: dueDate,
+        });
+
+        await this.transactionRepository.save(transaction);
+
+        // Reload with relations
+        transaction = await this.transactionRepository.findOne({
+          where: { id: transaction.id },
+          relations: ['user', 'group'],
+        });
+      }
+    }
 
     if (!transaction) {
       throw new NotFoundException('Transaction not found');
