@@ -77,3 +77,13 @@ export class CreateDepositDto {
   @Min(0)
   amount: number;
 }
+
+export class PayTransactionDto {
+  @ApiProperty({
+    description: 'Transaction ID to pay',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsString()
+  @IsNotEmpty()
+  transactionId: string;
+}

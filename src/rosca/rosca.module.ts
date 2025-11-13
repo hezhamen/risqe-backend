@@ -6,6 +6,7 @@ import { GroupInvitation } from './group-invitation.entity';
 import { GroupTransaction } from '../financials/group-transaction.entity';
 import { UserModule } from '../user/user.module';
 import { User } from '../user/user.entity';
+import { FinancialsModule } from '../financials/financials.module';
 import { RoscaService } from './rosca/rosca.service';
 import { RoscaController } from './rosca/rosca.controller';
 
@@ -13,6 +14,7 @@ import { RoscaController } from './rosca/rosca.controller';
   imports: [
     TypeOrmModule.forFeature([Group, GroupMember, GroupInvitation, User, GroupTransaction]),
     UserModule,
+    FinancialsModule,
   ],
   providers: [RoscaService],
   controllers: [RoscaController],

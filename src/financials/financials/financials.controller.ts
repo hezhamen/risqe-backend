@@ -21,6 +21,7 @@ import {
   CreateWithdrawalRequestDto,
   ProcessTransactionDto,
   CreateDepositDto,
+  PayTransactionDto,
 } from '../dto/financial.dto';
 import { JwtAuthGuard } from '../../user/auth/jwt-auth.guard';
 import { GetUser } from '../../user/auth/get-user.decorator';
@@ -265,5 +266,111 @@ export class FinancialsController {
       limit ? parseInt(limit.toString(), 10) : 50,
       offset ? parseInt(offset.toString(), 10) : 0,
     );
+  }
+
+  @Get('payments-due')
+  @ApiOperation({
+    summary: 'Get payments due',
+    description:
+      'Get all pending GROUP_PAYMENT transactions for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of payments due',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'uuid-string' },
+          type: { type: 'string', example: 'GROUP_PAYMENT' },
+          amount: { type: 'number', example: 210000 },
+          status: { type: 'string', example: 'PENDING' },
+          groupId: { type: 'string', nullable: true, example: 'uuid-string' },
+          groupName: { type: 'string', nullable: true, example: 'Erbil Savings Group' },
+          createdAt: { type: 'string', format: 'date-time' },
+          dueDate: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getPaymentsDue(@GetUser() user: any) {
+    return this.financialsService.getPaymentsDue(user.id);
+  }
+
+  @Post('transactions/:id/pay')
+  @ApiOperation({
+    summary: 'Pay a transaction',
+    description:
+      'Pay a pending GROUP_PAYMENT transaction. Deducts amount from user balance and marks transaction as COMPLETED.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Transaction ID to pay',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment completed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Payment completed successfully' },
+        transactionId: { type: 'string', example: 'uuid-string' },
+        newBalance: { type: 'number', example: 50000 },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - insufficient balance or invalid transaction' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  async payTransaction(
+    @GetUser() user: any,
+    @Param('id') transactionId: string,
+  ) {
+    return this.financialsService.payTransaction(user.id, transactionId);
+  }
+
+  @Post('groups/:groupId/create-payments')
+  @ApiOperation({
+    summary: 'Create payment due transactions for a group',
+    description:
+      'Create payment due transactions for all active members of a group. This should be called when a payment period is due.',
+  })
+  @ApiParam({
+    name: 'groupId',
+    description: 'Group ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment due transactions created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Payment due transactions created' },
+        transactionsCreated: { type: 'number', example: 5 },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - group not active or invalid' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
+  async createPaymentDueTransactions(
+    @Param('groupId') groupId: string,
+    @Query('period') period?: number,
+  ) {
+    const transactions = await this.financialsService.createPaymentDueTransactions(
+      groupId,
+      period ? parseInt(period.toString(), 10) : 1,
+    );
+    return {
+      success: true,
+      message: 'Payment due transactions created successfully',
+      transactionsCreated: transactions.length,
+    };
   }
 }
