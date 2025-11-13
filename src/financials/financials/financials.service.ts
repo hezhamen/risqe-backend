@@ -451,7 +451,7 @@ export class FinancialsService {
           type: 'PAYMENT',
           status: 'PENDING',
           description: `Payment due for ${group.name} - Period ${periodNumber}`,
-          createdAt: nextDueDate, // Set createdAt to the due date (when payment became due)
+          dueDate: nextDueDate, // Set dueDate to when payment is actually due
         });
 
         const savedTransaction = await this.transactionRepository.save(
@@ -466,7 +466,8 @@ export class FinancialsService {
 
   /**
    * Get payments due for a user
-   * Returns all PENDING GROUP_PAYMENT transactions
+   * Returns ALL PENDING GROUP_PAYMENT transactions (including future-due payments)
+   * Allows users to see and pay early payments
    */
   async getPaymentsDue(userId: string): Promise<
     Array<{
@@ -480,6 +481,8 @@ export class FinancialsService {
       dueDate: Date;
     }>
   > {
+    // Get ALL pending GROUP_PAYMENT transactions, regardless of due date
+    // This includes both current and future-due payments for early payment support
     const transactions = await this.transactionRepository.find({
       where: {
         userId,
@@ -487,7 +490,14 @@ export class FinancialsService {
         status: 'PENDING',
       },
       relations: ['group'],
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'ASC' }, // Order by createdAt (will be updated to dueDate once all records have dueDate)
+    });
+
+    // Sort by dueDate if available, otherwise by createdAt
+    transactions.sort((a, b) => {
+      const aDate = a.dueDate || a.createdAt;
+      const bDate = b.dueDate || b.createdAt;
+      return aDate.getTime() - bDate.getTime();
     });
 
     return transactions.map((transaction) => ({
@@ -498,12 +508,14 @@ export class FinancialsService {
       groupId: transaction.groupId || null,
       groupName: transaction.group?.name || null,
       createdAt: transaction.createdAt,
-      dueDate: transaction.createdAt, // createdAt represents when payment became due
+      dueDate: transaction.dueDate || transaction.createdAt, // Use dueDate if available, fallback to createdAt
     }));
   }
 
   /**
    * Pay a transaction (mark as COMPLETED and deduct from balance)
+   * Allows paying ANY pending GROUP_PAYMENT transaction, including future-due payments (early payments)
+   * No date restrictions - users can pay ahead of schedule
    */
   async payTransaction(
     userId: string,
@@ -541,6 +553,9 @@ export class FinancialsService {
     if (transaction.type !== 'PAYMENT') {
       throw new BadRequestException('Only payment transactions can be paid');
     }
+
+    // NOTE: No dueDate check - early payments are allowed
+    // Users can pay future-due payments ahead of schedule
 
     // Check user balance
     const user = await this.userRepository.findOne({
