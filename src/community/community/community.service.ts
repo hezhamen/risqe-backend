@@ -87,6 +87,14 @@ export class CommunityService {
       throw new NotFoundException('You can only delete your own posts');
     }
 
+    // Delete related records first to avoid foreign key constraint issues
+    // Delete all likes for this post
+    await this.postLikeRepository.delete({ postId });
+    
+    // Delete all comments for this post
+    await this.commentRepository.delete({ postId });
+    
+    // Now delete the post
     await this.postRepository.remove(post);
   }
 
