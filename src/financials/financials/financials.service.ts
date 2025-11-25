@@ -324,16 +324,12 @@ export class FinancialsService {
       //   this.httpService.post('https://external-payment-api.com/process', paymentData)
       // );
 
-      // For demo purposes, we'll simulate success/failure
-      if (Math.random() > 0.1) {
-        // 90% success rate
-        return {
-          success: true,
-          transactionId: `ext_${Date.now()}`,
-        };
-      } else {
-        throw new Error('External payment failed');
-      }
+      // For now, always succeed (external payment integration pending)
+      // TODO: Integrate with actual payment provider (FIB, etc.)
+      return {
+        success: true,
+        transactionId: `ext_${Date.now()}`,
+      };
     } catch (error) {
       throw new BadRequestException('External payment processing failed');
     }
