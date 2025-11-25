@@ -147,6 +147,7 @@ export class CommunityService {
       );
 
       return {
+        id: post.id,
         title: post.title,
         author: {
           id: post.user.id,
@@ -156,7 +157,9 @@ export class CommunityService {
         likeCount: post.likes,
         hasLiked: currentUserId ? likedPostIds.has(post.id) : false,
         commentCount: post.comments.length,
+        createdAt: post.createdAt,
         comments: sortedComments.map((comment) => ({
+          id: comment.id,
           content: comment.content,
           author: {
             id: comment.user.id,
@@ -165,6 +168,7 @@ export class CommunityService {
             email: comment.user.email,
             avatar: comment.user.photoUrl || null,
           },
+          createdAt: comment.createdAt,
         })),
       };
     });
@@ -196,6 +200,7 @@ export class CommunityService {
 
     // Aggregate post and comments with author information
     const postWithAuthorInfo = {
+      id: post.id,
       title: post.title,
       author: {
         id: post.user.id,
@@ -205,7 +210,9 @@ export class CommunityService {
       likeCount: post.likes,
       hasLiked,
       commentCount: post.comments.length,
+      createdAt: post.createdAt,
       comments: sortedComments.map((comment) => ({
+        id: comment.id,
         content: comment.content,
         author: {
           id: comment.user.id,
@@ -214,6 +221,7 @@ export class CommunityService {
           email: comment.user.email,
           avatar: comment.user.photoUrl || null,
         },
+        createdAt: comment.createdAt,
       })),
     };
 
