@@ -2,7 +2,29 @@
 
 Production-ready NestJS backend implementing User/Auth, ROSCA, Financials, Community, Notifications, and Redeem domains with PostgreSQL + TypeORM.
 
-### Architecture Overview
+---
+
+## Table of Contents
+
+- [Architecture Overview](#architecture-overview)
+- [System Architecture](#system-architecture)
+- [Entity Relationship Diagrams](#entity-relationship-diagrams)
+  - [Full ERD (All Entities)](#full-erd-all-entities)
+  - [Domain ERDs](#domain-erds)
+    - [User & Authentication Domain](#1-user--authentication-domain)
+    - [ROSCA Domain](#2-rosca-domain)
+    - [Financial Domain](#3-financial-domain)
+    - [Community Domain](#4-community-domain)
+    - [Notifications Domain](#5-notifications-domain)
+    - [Rewards Domain](#6-rewards-domain)
+- [Module Structure](#module-structure)
+- [Getting Started](#getting-started)
+- [API Documentation](#api-documentation)
+- [Technology Stack](#technology-stack)
+
+---
+
+## Architecture Overview
 
 ```mermaid
 flowchart TD
@@ -33,7 +55,9 @@ flowchart TD
     style M fill:#e1ffe1
 ```
 
-### System Architecture
+---
+
+## System Architecture
 
 ```mermaid
 graph TB
@@ -74,62 +98,60 @@ graph TB
     style O fill:#ffe1f5
 ```
 
-### Entity Relationship Diagram (ERD)
+---
+
+## Entity Relationship Diagrams
+
+The database schema is organized into **6 domains** with **12 entities** total.
+
+### Full ERD (All Entities)
+
+Complete entity relationship diagram showing all entities with their fields and relationships:
 
 ```mermaid
 erDiagram
-    USER ||--o{ GROUP_MEMBER : "has membership"
-    USER ||--o{ GROUP_INVITATION : "receives"
-    USER ||--o{ GROUP_INVITATION : "sends"
-    USER ||--o{ GROUP_TRANSACTION : "makes"
-    USER ||--o{ WITHDRAWAL_REQUEST : "requests"
-    USER ||--o{ POST : "creates"
-    USER ||--o{ COMMENT : "writes"
-    USER ||--o{ POST_LIKE : "likes"
-    USER ||--o{ NOTIFICATION : "receives"
-    USER ||--o{ COLLATERAL_DOCUMENT : "uploads"
-    USER ||--o{ USER_COUPON : "redeems"
-
-    ROSCA_GROUP ||--o{ GROUP_MEMBER : "has members"
-    ROSCA_GROUP ||--o{ GROUP_INVITATION : "sends"
-    ROSCA_GROUP ||--o{ GROUP_TRANSACTION : "records"
-
-    POST ||--o{ COMMENT : "has"
-    POST ||--o{ POST_LIKE : "receives"
-
-    COUPON ||--o{ USER_COUPON : "redeemed as"
-
     USER {
         uuid id PK
-        string phoneNumber UK
-        string email UK "nullable"
-        string firstName
-        string lastName
-        string passwordHash
-        decimal internalBalance "default 0"
-        int pointsBalance "default 0"
-        int creditScore "default 500"
-        boolean isPhoneVerified "default false"
-        string phoneOtpCode "nullable"
-        timestamp phoneOtpExpiresAt "nullable"
-        string namabarVerificationId "nullable"
-        string photoUrl "nullable"
-        string pendingPhoneNumber "nullable"
-        string pendingPhoneOtpCode "nullable"
-        timestamp pendingPhoneOtpExpiresAt "nullable"
+        varchar phoneNumber UK
+        varchar email UK
+        varchar firstName
+        varchar lastName
+        varchar passwordHash
+        decimal internalBalance
+        int pointsBalance
+        int creditScore
+        boolean isPhoneVerified
+        varchar phoneOtpCode
+        timestamp phoneOtpExpiresAt
+        varchar namabarVerificationId
+        varchar photoUrl
+        varchar pendingPhoneNumber
+        varchar pendingPhoneOtpCode
+        timestamp pendingPhoneOtpExpiresAt
+    }
+
+    COLLATERAL_DOCUMENT {
+        uuid id PK
+        uuid userId FK
+        varchar documentType
+        varchar documentUrl
+        varchar status
+        varchar rejectionReason
+        timestamp uploadedAt
+        timestamp reviewedAt
     }
 
     ROSCA_GROUP {
         uuid id PK
         uuid adminUserId FK
-        string name
+        varchar name
         decimal totalFundTarget
-        int currentPeriod "default 1"
-        string duration "nullable"
-        string frequency "nullable"
-        string payoutType "ORDERED_LIST | VOTE_BASED"
-        boolean isActive "default true"
-        json memberOrder "nullable - array of user IDs"
+        int currentPeriod
+        varchar duration
+        varchar frequency
+        varchar payoutType
+        boolean isActive
+        json memberOrder
         timestamp createdAt
     }
 
@@ -137,10 +159,10 @@ erDiagram
         uuid id PK
         uuid groupId FK
         uuid userId FK
-        boolean is_admin "default false"
-        string status "default ACTIVE"
-        decimal totalContribution "default 0"
-        decimal totalReceived "default 0"
+        boolean is_admin
+        varchar status
+        decimal totalContribution
+        decimal totalReceived
     }
 
     GROUP_INVITATION {
@@ -148,45 +170,45 @@ erDiagram
         uuid groupId FK
         uuid invitedUserId FK
         uuid invitedByUserId FK
-        enum status "PENDING | ACCEPTED | REJECTED"
+        enum status
         timestamp createdAt
         timestamp updatedAt
-        timestamp respondedAt "nullable"
+        timestamp respondedAt
     }
 
     GROUP_TRANSACTION {
         uuid id PK
-        uuid groupId FK "nullable"
+        uuid groupId FK
         uuid userId FK
         decimal amount
-        string type "CONTRIBUTION | PAYOUT | PENALTY | DEPOSIT | WITHDRAWAL | GROUP_PAYMENT | GROUP_PAYOUT"
-        string status "PENDING | COMPLETED | FAILED"
+        varchar type
+        varchar status
         timestamp createdAt
-        timestamp dueDate "nullable"
-        string description "nullable"
-        string externalTransactionId "nullable"
+        timestamp dueDate
+        varchar description
+        varchar externalTransactionId
     }
 
     WITHDRAWAL_REQUEST {
         uuid id PK
         uuid userId FK
         decimal amount
-        string paymentMethod "BANK_TRANSFER | MOBILE_MONEY | CASH"
-        string paymentDetails "JSON string"
-        string status "PENDING | APPROVED | REJECTED"
+        varchar paymentMethod
+        varchar paymentDetails
+        varchar status
         timestamp createdAt
-        timestamp processedAt "nullable"
-        string externalTransactionId "nullable"
-        string failureReason "nullable"
+        timestamp processedAt
+        varchar externalTransactionId
+        varchar failureReason
     }
 
     POST {
         uuid id PK
         uuid userId FK
-        string title
+        varchar title
         text content
-        int likes "default 0"
-        int dislikes "default 0"
+        int likes
+        int dislikes
         timestamp createdAt
         timestamp updatedAt
     }
@@ -196,8 +218,8 @@ erDiagram
         uuid postId FK
         uuid userId FK
         text content
-        int likes "default 0"
-        int dislikes "default 0"
+        int likes
+        int dislikes
         timestamp createdAt
         timestamp updatedAt
     }
@@ -212,34 +234,23 @@ erDiagram
     NOTIFICATION {
         uuid id PK
         uuid userId FK
-        enum type "PAYMENT_DUE | VOTING_DUE | GROUP_INVITATION | PAYMENT_RECEIVED | VOTE_RESULT"
-        string title
+        varchar type
+        varchar title
         text message
-        boolean read "default false"
-        uuid groupId "nullable"
-        string actionUrl "nullable"
+        boolean read
+        varchar groupId
+        varchar actionUrl
         timestamp createdAt
-    }
-
-    COLLATERAL_DOCUMENT {
-        uuid id PK
-        uuid userId FK
-        enum documentType "house | car"
-        string documentUrl "nullable"
-        enum status "PENDING | APPROVED | REJECTED"
-        string rejectionReason "nullable"
-        timestamp uploadedAt
-        timestamp reviewedAt "nullable"
     }
 
     COUPON {
         uuid id PK
-        string title
-        string subtitle "nullable"
-        decimal cost "points required"
-        string imageUrl "nullable"
-        timestamp expiresAt "nullable"
-        boolean isActive "default true"
+        varchar title
+        varchar subtitle
+        decimal cost
+        varchar imageUrl
+        timestamp expiresAt
+        boolean isActive
         timestamp createdAt
     }
 
@@ -247,29 +258,340 @@ erDiagram
         uuid id PK
         uuid userId FK
         uuid couponId FK
-        string redemptionCode "nullable"
+        varchar redemptionCode
         timestamp redeemedAt
+    }
+
+    USER ||--o{ COLLATERAL_DOCUMENT : "uploads"
+    USER ||--o{ GROUP_MEMBER : "has membership"
+    USER ||--o{ GROUP_INVITATION : "receives"
+    USER ||--o{ GROUP_INVITATION : "sends"
+    USER ||--o{ GROUP_TRANSACTION : "makes"
+    USER ||--o{ WITHDRAWAL_REQUEST : "requests"
+    USER ||--o{ POST : "creates"
+    USER ||--o{ COMMENT : "writes"
+    USER ||--o{ POST_LIKE : "likes"
+    USER ||--o{ NOTIFICATION : "receives"
+    USER ||--o{ USER_COUPON : "redeems"
+
+    ROSCA_GROUP ||--o{ GROUP_MEMBER : "has members"
+    ROSCA_GROUP ||--o{ GROUP_INVITATION : "sends"
+    ROSCA_GROUP ||--o{ GROUP_TRANSACTION : "records"
+
+    POST ||--o{ COMMENT : "has"
+    POST ||--o{ POST_LIKE : "receives"
+
+    COUPON ||--o{ USER_COUPON : "redeemed as"
+```
+
+---
+
+### Domain ERDs
+
+Detailed ERDs for each domain with field specifications and constraints.
+
+---
+
+### 1. User & Authentication Domain
+
+Handles user accounts, authentication, and collateral verification.
+
+```mermaid
+erDiagram
+    USER ||--o{ COLLATERAL_DOCUMENT : "uploads"
+
+    USER {
+        uuid id PK
+        varchar phoneNumber UK "required"
+        varchar email UK "nullable"
+        varchar firstName "required"
+        varchar lastName "required"
+        varchar passwordHash "required"
+        decimal internalBalance "default: 0.00"
+        int pointsBalance "default: 0"
+        int creditScore "default: 500"
+        boolean isPhoneVerified "default: false"
+        varchar phoneOtpCode "nullable"
+        timestamp phoneOtpExpiresAt "nullable"
+        varchar namabarVerificationId "nullable"
+        varchar photoUrl "nullable"
+        varchar pendingPhoneNumber "nullable"
+        varchar pendingPhoneOtpCode "nullable"
+        timestamp pendingPhoneOtpExpiresAt "nullable"
+    }
+
+    COLLATERAL_DOCUMENT {
+        uuid id PK
+        uuid userId FK "required"
+        varchar documentType "house | car"
+        varchar documentUrl "nullable"
+        varchar status "PENDING | APPROVED | REJECTED"
+        varchar rejectionReason "nullable"
+        timestamp uploadedAt "default: now()"
+        timestamp reviewedAt "nullable"
     }
 ```
 
-### Module Structure
+**Key Features:**
+
+- Phone-based authentication with OTP verification via Namabar SMS
+- Internal wallet balance and points system
+- Credit score tracking (default: 500)
+- Phone number change flow with pending verification
+- Collateral documents for credit verification
+
+---
+
+### 2. ROSCA Domain
+
+Manages ROSCA (Rotating Savings and Credit Association) groups, memberships, and invitations.
+
+```mermaid
+erDiagram
+    USER ||--o{ GROUP_MEMBER : "joins as"
+    USER ||--o{ GROUP_INVITATION : "receives"
+    USER ||--o{ GROUP_INVITATION : "sends"
+    ROSCA_GROUP ||--o{ GROUP_MEMBER : "has"
+    ROSCA_GROUP ||--o{ GROUP_INVITATION : "generates"
+
+    ROSCA_GROUP {
+        uuid id PK
+        uuid adminUserId FK "required"
+        varchar name "required"
+        decimal totalFundTarget "required"
+        int currentPeriod "default: 1"
+        varchar duration "nullable - e.g. 1 year"
+        varchar frequency "nullable - e.g. monthly"
+        varchar payoutType "ORDERED_LIST | VOTE_BASED"
+        boolean isActive "default: true"
+        json memberOrder "nullable - array of user IDs"
+        timestamp createdAt "default: now()"
+    }
+
+    GROUP_MEMBER {
+        uuid id PK
+        uuid groupId FK "required"
+        uuid userId FK "required"
+        boolean is_admin "default: false"
+        varchar status "default: ACTIVE"
+        decimal totalContribution "default: 0.00"
+        decimal totalReceived "default: 0.00"
+    }
+
+    GROUP_INVITATION {
+        uuid id PK
+        uuid groupId FK "required"
+        uuid invitedUserId FK "required"
+        uuid invitedByUserId FK "required"
+        enum status "PENDING | ACCEPTED | REJECTED"
+        timestamp createdAt "auto"
+        timestamp updatedAt "auto"
+        timestamp respondedAt "nullable"
+    }
+```
+
+**Key Features:**
+
+- Two payout types: `ORDERED_LIST` (predetermined order) or `VOTE_BASED` (members vote)
+- Member order stored as JSON array for ordered payouts
+- Invitation system with accept/reject flow
+- Contribution and payout tracking per member
+
+---
+
+### 3. Financial Domain
+
+Handles all financial transactions including contributions, payouts, deposits, and withdrawals.
+
+```mermaid
+erDiagram
+    USER ||--o{ GROUP_TRANSACTION : "makes"
+    USER ||--o{ WITHDRAWAL_REQUEST : "requests"
+    ROSCA_GROUP ||--o{ GROUP_TRANSACTION : "records"
+
+    GROUP_TRANSACTION {
+        uuid id PK
+        uuid groupId FK "nullable - null for deposits/withdrawals"
+        uuid userId FK "required"
+        decimal amount "required"
+        varchar type "CONTRIBUTION | PAYOUT | PENALTY | DEPOSIT | WITHDRAWAL | GROUP_PAYMENT | GROUP_PAYOUT"
+        varchar status "PENDING | COMPLETED | FAILED"
+        timestamp createdAt "default: now()"
+        timestamp dueDate "nullable"
+        varchar description "nullable"
+        varchar externalTransactionId "nullable"
+    }
+
+    WITHDRAWAL_REQUEST {
+        uuid id PK
+        uuid userId FK "required"
+        decimal amount "required"
+        varchar paymentMethod "BANK_TRANSFER | MOBILE_MONEY | CASH"
+        varchar paymentDetails "JSON string"
+        varchar status "PENDING | APPROVED | REJECTED"
+        timestamp createdAt "default: now()"
+        timestamp processedAt "nullable"
+        varchar externalTransactionId "nullable"
+        varchar failureReason "nullable"
+    }
+```
+
+**Transaction Types:**
+
+| Type            | Description                        |
+| --------------- | ---------------------------------- |
+| `CONTRIBUTION`  | Member contribution to ROSCA group |
+| `PAYOUT`        | Payout received from ROSCA group   |
+| `PENALTY`       | Penalty for late/missed payments   |
+| `DEPOSIT`       | Deposit to internal wallet         |
+| `WITHDRAWAL`    | Withdrawal from internal wallet    |
+| `GROUP_PAYMENT` | Payment made to group              |
+| `GROUP_PAYOUT`  | Payout distributed from group      |
+
+---
+
+### 4. Community Domain
+
+Powers the social features with posts, comments, and likes.
+
+```mermaid
+erDiagram
+    USER ||--o{ POST : "creates"
+    USER ||--o{ COMMENT : "writes"
+    USER ||--o{ POST_LIKE : "likes"
+    POST ||--o{ COMMENT : "has"
+    POST ||--o{ POST_LIKE : "receives"
+
+    POST {
+        uuid id PK
+        uuid userId FK "required"
+        varchar title "required"
+        text content "required"
+        int likes "default: 0"
+        int dislikes "default: 0"
+        timestamp createdAt "default: now()"
+        timestamp updatedAt "auto-updated"
+    }
+
+    COMMENT {
+        uuid id PK
+        uuid postId FK "required"
+        uuid userId FK "required"
+        text content "required"
+        int likes "default: 0"
+        int dislikes "default: 0"
+        timestamp createdAt "default: now()"
+        timestamp updatedAt "auto-updated"
+    }
+
+    POST_LIKE {
+        uuid id PK
+        uuid postId FK "required"
+        uuid userId FK "required"
+        timestamp createdAt "default: now()"
+    }
+```
+
+**Key Features:**
+
+- Posts with title and content
+- Nested comments on posts
+- Like/dislike system with counter caching
+- Unique constraint: one like per user per post
+
+---
+
+### 5. Notifications Domain
+
+Handles user notifications for various events.
+
+```mermaid
+erDiagram
+    USER ||--o{ NOTIFICATION : "receives"
+
+    NOTIFICATION {
+        uuid id PK
+        uuid userId FK "required"
+        varchar type "PAYMENT_DUE | VOTING_DUE | GROUP_INVITATION | PAYMENT_RECEIVED | VOTE_RESULT"
+        varchar title "required"
+        text message "required"
+        boolean read "default: false"
+        varchar groupId "nullable - related group"
+        varchar actionUrl "nullable - deep link"
+        timestamp createdAt "default: now()"
+    }
+```
+
+**Notification Types:**
+
+| Type               | Description                          |
+| ------------------ | ------------------------------------ |
+| `PAYMENT_DUE`      | Reminder for upcoming payment        |
+| `VOTING_DUE`       | Reminder to vote on payout recipient |
+| `GROUP_INVITATION` | Invitation to join a group           |
+| `PAYMENT_RECEIVED` | Confirmation of payment received     |
+| `VOTE_RESULT`      | Result of voting round               |
+
+---
+
+### 6. Rewards Domain
+
+Manages the coupon/rewards system for point redemption.
+
+```mermaid
+erDiagram
+    USER ||--o{ USER_COUPON : "redeems"
+    COUPON ||--o{ USER_COUPON : "redeemed as"
+
+    COUPON {
+        uuid id PK
+        varchar title "required"
+        varchar subtitle "nullable"
+        decimal cost "points required"
+        varchar imageUrl "nullable"
+        timestamp expiresAt "nullable"
+        boolean isActive "default: true"
+        timestamp createdAt "default: now()"
+    }
+
+    USER_COUPON {
+        uuid id PK
+        uuid userId FK "required"
+        uuid couponId FK "required"
+        varchar redemptionCode "nullable - unique code"
+        timestamp redeemedAt "default: now()"
+    }
+```
+
+**Key Features:**
+
+- Point-based coupon redemption
+- Coupon expiration and active status
+- Unique redemption codes per user-coupon pair
+
+---
+
+## Module Structure
 
 ```
 src/
 ├── app.module.ts                 # Root module
 ├── main.ts                       # Application entry point
 ├── config/
-│   └── database.config.ts       # Database configuration
+│   └── database.config.ts        # Database configuration
 ├── user/
-│   ├── user.entity.ts           # User entity
+│   ├── user.entity.ts            # User entity
 │   ├── collateral-document.entity.ts
 │   ├── user.module.ts
-│   ├── auth/                    # Authentication
+│   ├── dto/
+│   │   └── user.dto.ts
+│   ├── auth/                     # Authentication
 │   │   ├── auth.controller.ts
 │   │   ├── auth.service.ts
 │   │   ├── jwt.strategy.ts
-│   │   └── guards/
-│   └── phone/                   # Phone verification
+│   │   ├── jwt-auth.guard.ts
+│   │   └── dto/
+│   └── phone/                    # Phone verification
 │       ├── phone.controller.ts
 │       └── phone.service.ts
 ├── rosca/
@@ -277,6 +599,8 @@ src/
 │   ├── group-member.entity.ts
 │   ├── group-invitation.entity.ts
 │   ├── rosca.module.ts
+│   ├── dto/
+│   │   └── rosca.dto.ts
 │   └── rosca/
 │       ├── rosca.controller.ts
 │       └── rosca.service.ts
@@ -284,6 +608,8 @@ src/
 │   ├── group-transaction.entity.ts
 │   ├── withdrawal-request.entity.ts
 │   ├── financials.module.ts
+│   ├── dto/
+│   │   └── financials.dto.ts
 │   └── financials/
 │       ├── financials.controller.ts
 │       └── financials.service.ts
@@ -292,6 +618,8 @@ src/
 │   ├── comment.entity.ts
 │   ├── post-like.entity.ts
 │   ├── community.module.ts
+│   ├── dto/
+│   │   └── community.dto.ts
 │   └── community/
 │       ├── community.controller.ts
 │       └── community.service.ts
@@ -302,26 +630,30 @@ src/
 │       ├── notifications.controller.ts
 │       └── notifications.service.ts
 ├── redeem/
-│   ├── coupon.entity.ts
+│   ├── coupon.entity.ts          # Coupon + UserCoupon entities
 │   ├── redeem.module.ts
 │   └── redeem/
 │       ├── redeem.controller.ts
 │       └── redeem.service.ts
+├── seeds/
+│   └── seed.ts                   # Database seeder
 └── shared/
-    └── storage/                 # File storage (S3/Bucketeer)
+    └── storage/                  # File storage (S3/Bucketeer)
         ├── storage.module.ts
         └── storage.service.ts
 ```
 
-### Getting Started
+---
 
-#### 1. Install Dependencies
+## Getting Started
+
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-#### 2. Database Setup (PostgreSQL)
+### 2. Database Setup (PostgreSQL)
 
 **macOS:**
 
@@ -338,7 +670,7 @@ sudo apt-get install postgresql postgresql-contrib
 sudo -u postgres createdb risqe_db
 ```
 
-#### 3. Environment Configuration
+### 3. Environment Configuration
 
 Create a `.env` file in the root directory:
 
@@ -374,7 +706,7 @@ AWS_SECRET_ACCESS_KEY=your_secret_key
 PORT=3000
 ```
 
-#### 4. Run Development Server
+### 4. Run Development Server
 
 ```bash
 npm run start:dev
@@ -386,13 +718,13 @@ The application will be available at:
 - **API Documentation**: `http://localhost:3000/reference` (Scalar)
 - **Swagger UI**: `http://localhost:3000/docs` (if configured)
 
-#### 5. Seed Database
+### 5. Seed Database
 
 ```bash
 npm run seed
 ```
 
-#### 6. Run Tests
+### 6. Run Tests
 
 ```bash
 # Unit tests
@@ -405,7 +737,9 @@ npm run test:e2e
 npm run test:cov
 ```
 
-### API Documentation
+---
+
+## API Documentation
 
 The API documentation is available at `/reference` using Scalar API Reference. All endpoints are documented with:
 
@@ -414,9 +748,11 @@ The API documentation is available at `/reference` using Scalar API Reference. A
 - Example requests
 - Error responses
 
-### Key Features
+---
 
-#### Authentication & User Management
+## Key Features
+
+### Authentication & User Management
 
 - **Phone-based authentication** with OTP via Namabar SMS
 - **JWT-based authentication** for protected routes
@@ -426,7 +762,7 @@ The API documentation is available at `/reference` using Scalar API Reference. A
 - **Collateral document upload** for credit verification
 - **User search** by email, phone, or name
 
-#### ROSCA (Rotating Savings and Credit Association)
+### ROSCA (Rotating Savings and Credit Association)
 
 - **Group creation** with configurable payout types (ORDERED_LIST, VOTE_BASED)
 - **Member management** with admin roles
@@ -435,7 +771,7 @@ The API documentation is available at `/reference` using Scalar API Reference. A
 - **Transaction tracking** (contributions, payouts)
 - **Payment due management** with automatic transaction creation
 
-#### Financial Management
+### Financial Management
 
 - **Internal wallet** with balance tracking
 - **Deposit/Withdrawal** requests
@@ -444,13 +780,13 @@ The API documentation is available at `/reference` using Scalar API Reference. A
 - **Points system** for rewards
 - **Credit score** tracking
 
-#### Community Features
+### Community Features
 
 - **Posts** with likes/dislikes
 - **Comments** on posts
 - **Post interactions** tracking
 
-#### Notifications
+### Notifications
 
 - **Real-time notifications** for:
   - Payment due reminders
@@ -461,185 +797,22 @@ The API documentation is available at `/reference` using Scalar API Reference. A
 - **Notification filtering** by type
 - **Read/unread** status tracking
 
-#### Rewards & Redemption
+### Rewards & Redemption
 
 - **Coupon system** with point-based redemption
 - **Coupon management** (active/inactive, expiration)
 - **Redemption tracking** with unique codes
 
-#### File Storage
+### File Storage
 
 - **S3/Bucketeer integration** for file uploads
 - **Avatar uploads** for user profiles
 - **Document storage** for collateral verification
 - **Automatic URL generation** for uploaded files
 
-### API Endpoints
+---
 
-#### Authentication (`/auth`)
-
-| Method | Endpoint                     | Description                    | Auth Required |
-| ------ | ---------------------------- | ------------------------------ | ------------- |
-| POST   | `/auth/register`             | Register new user              | No            |
-| POST   | `/auth/register/initiate`    | Initiate registration with OTP | No            |
-| POST   | `/auth/login`                | Login user                     | No            |
-| GET    | `/auth/profile`              | Get user profile               | Yes           |
-| PATCH  | `/auth/profile`              | Update user profile            | Yes           |
-| POST   | `/auth/forgot-password`      | Request password reset OTP     | No            |
-| POST   | `/auth/change-password`      | Change password                | Yes           |
-| POST   | `/auth/phone/change/request` | Request phone change OTP       | Yes           |
-| POST   | `/auth/phone/change/verify`  | Verify and change phone        | Yes           |
-| POST   | `/auth/profile/avatar`       | Upload avatar                  | Yes           |
-| POST   | `/auth/collateral/upload`    | Upload collateral document     | Yes           |
-| GET    | `/auth/collateral/documents` | Get collateral documents       | Yes           |
-| POST   | `/auth/user/check-email`     | Check user by email            | No            |
-| POST   | `/auth/user/search`          | Search users                   | Yes           |
-| POST   | `/auth/user/check-phone`     | Check user by phone            | Yes           |
-
-#### ROSCA (`/rosca`)
-
-| Method | Endpoint                         | Description              | Auth Required |
-| ------ | -------------------------------- | ------------------------ | ------------- |
-| POST   | `/rosca/groups`                  | Create ROSCA group       | Yes           |
-| POST   | `/rosca/groups/join`             | Join group by code       | Yes           |
-| GET    | `/rosca/groups`                  | Get user's groups        | Yes           |
-| GET    | `/rosca/groups/:id`              | Get group details        | Yes           |
-| GET    | `/rosca/groups/:id/members`      | Get group members        | Yes           |
-| GET    | `/rosca/groups/:id/transactions` | Get group transactions   | Yes           |
-| POST   | `/rosca/groups/:id/vote`         | Vote on payout           | Yes           |
-| POST   | `/rosca/groups/:id/invite`       | Invite member            | Yes           |
-| GET    | `/rosca/invitations`             | Get pending invitations  | Yes           |
-| POST   | `/rosca/invitations/respond`     | Accept/reject invitation | Yes           |
-
-#### Financials (`/financials`)
-
-| Method | Endpoint                                      | Description               | Auth Required |
-| ------ | --------------------------------------------- | ------------------------- | ------------- |
-| POST   | `/financials/deposits`                        | Create deposit            | Yes           |
-| POST   | `/financials/withdrawals`                     | Create withdrawal request | Yes           |
-| GET    | `/financials/withdrawals`                     | Get user withdrawals      | Yes           |
-| POST   | `/financials/withdrawals/:id/process`         | Process withdrawal        | Yes           |
-| GET    | `/financials/transactions`                    | Get user transactions     | Yes           |
-| GET    | `/financials/payments-due`                    | Get payments due          | Yes           |
-| POST   | `/financials/transactions/:id/pay`            | Pay transaction           | Yes           |
-| POST   | `/financials/groups/:groupId/create-payments` | Create payment dues       | Yes           |
-
-#### Community (`/community`)
-
-| Method | Endpoint                          | Description      | Auth Required |
-| ------ | --------------------------------- | ---------------- | ------------- |
-| POST   | `/community/posts`                | Create post      | Yes           |
-| GET    | `/community/posts`                | Get all posts    | Yes           |
-| GET    | `/community/posts/:id`            | Get post details | Yes           |
-| PUT    | `/community/posts/:id`            | Update post      | Yes           |
-| DELETE | `/community/posts/:id`            | Delete post      | Yes           |
-| POST   | `/community/posts/:id/comments`   | Add comment      | Yes           |
-| POST   | `/community/posts/:id/like`       | Like post        | Yes           |
-| POST   | `/community/posts/:id/dislike`    | Dislike post     | Yes           |
-| POST   | `/community/comments/:id/like`    | Like comment     | Yes           |
-| POST   | `/community/comments/:id/dislike` | Dislike comment  | Yes           |
-
-#### Notifications (`/notifications`)
-
-| Method | Endpoint         | Description       | Auth Required |
-| ------ | ---------------- | ----------------- | ------------- |
-| GET    | `/notifications` | Get notifications | Yes           |
-
-#### Redeem (`/redeem`)
-
-| Method | Endpoint              | Description           | Auth Required |
-| ------ | --------------------- | --------------------- | ------------- |
-| GET    | `/redeem/coupons`     | Get available coupons | Yes           |
-| POST   | `/redeem/coupons/:id` | Redeem coupon         | Yes           |
-
-### Example API Requests
-
-#### Register and Login
-
-```bash
-# Register new user
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phoneNumber": "+9647721270202",
-    "firstName": "Ahmed",
-    "lastName": "Hassan",
-    "password": "securePassword123"
-  }'
-
-# Login
-TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phoneNumber": "+9647721270202",
-    "password": "securePassword123"
-  }' | jq -r '.access_token')
-```
-
-#### ROSCA Group Operations
-
-```bash
-# Create group
-curl -X POST http://localhost:3000/rosca/groups \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Peshkawtn",
-    "totalFundTarget": 840000,
-    "duration": "1 year every month",
-    "frequency": "monthly",
-    "payoutType": "ORDERED_LIST"
-  }'
-
-# Get group details
-curl -X GET http://localhost:3000/rosca/groups/{groupId} \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-#### Financial Operations
-
-```bash
-# Create deposit
-curl -X POST http://localhost:3000/financials/deposits \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 50000
-  }'
-
-# Create withdrawal request
-curl -X POST http://localhost:3000/financials/withdrawals \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 25000,
-    "paymentMethod": "BANK_TRANSFER",
-    "paymentDetails": "{\"iban\":\"DE89 3704 0044 0532 0130 00\"}"
-  }'
-```
-
-#### Community Operations
-
-```bash
-# Create post
-POST_ID=$(curl -s -X POST http://localhost:3000/community/posts \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "My first post",
-    "content": "Hello community!"
-  }' | jq -r '.id')
-
-# Add comment
-curl -X POST http://localhost:3000/community/posts/$POST_ID/comments \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "Great post!"
-  }'
-```
-
-### Database Migrations
+## Database Migrations
 
 In development, TypeORM `synchronize` is enabled. For production:
 
@@ -657,7 +830,9 @@ npm run typeorm migration:run
 npm run typeorm migration:revert
 ```
 
-### Authentication
+---
+
+## Authentication
 
 Most endpoints require JWT authentication. Include the token in the Authorization header:
 
@@ -665,7 +840,9 @@ Most endpoints require JWT authentication. Include the token in the Authorizatio
 Authorization: Bearer <your_jwt_token>
 ```
 
-### File Storage Configuration
+---
+
+## File Storage Configuration
 
 The application supports both AWS S3 and Bucketeer for file storage. Configure using environment variables:
 
@@ -677,7 +854,9 @@ Files are automatically uploaded and public URLs are generated. Supported file t
 - Images: JPEG, PNG, GIF, WebP
 - Documents: PDF, DOC, DOCX
 
-### Development Scripts
+---
+
+## Development Scripts
 
 ```bash
 # Development
@@ -706,14 +885,18 @@ npm run version:minor      # Bump minor version
 npm run version:major      # Bump major version
 ```
 
-### Production Deployment
+---
+
+## Production Deployment
 
 1. **Environment Variables**: Ensure all required environment variables are set
 2. **Database**: Run migrations before starting the application
 3. **Build**: Run `npm run build` to compile TypeScript
 4. **Start**: Use `npm run start:prod` or a process manager like PM2
 
-### Notes
+---
+
+## Notes
 
 - **TypeORM Synchronize**: Disabled in production. Use migrations instead.
 - **JWT Tokens**: Tokens expire after a configured period. Refresh tokens may be implemented.
@@ -721,24 +904,32 @@ npm run version:major      # Bump major version
 - **Rate Limiting**: Consider implementing rate limiting for production.
 - **CORS**: Configure CORS settings for your frontend domain.
 
-### Technology Stack
+---
 
-- **Framework**: NestJS 11.x
-- **Language**: TypeScript 5.x
-- **Database**: PostgreSQL (via TypeORM)
-- **Authentication**: JWT (Passport)
-- **File Storage**: AWS S3 / Bucketeer
-- **SMS**: Namabar API
-- **API Documentation**: Scalar API Reference + Swagger
-- **Validation**: class-validator, class-transformer
+## Technology Stack
 
-### Contributing
+| Category       | Technology                         |
+| -------------- | ---------------------------------- |
+| Framework      | NestJS 11.x                        |
+| Language       | TypeScript 5.x                     |
+| Database       | PostgreSQL (via TypeORM)           |
+| Authentication | JWT (Passport)                     |
+| File Storage   | AWS S3 / Bucketeer                 |
+| SMS            | Namabar API                        |
+| API Docs       | Scalar API Reference + Swagger     |
+| Validation     | class-validator, class-transformer |
+
+---
+
+## Contributing
 
 1. Follow the TypeScript and NestJS coding guidelines
 2. Write tests for new features
 3. Update API documentation
 4. Follow the commit message conventions
 
-### License
+---
+
+## License
 
 This project is private and proprietary.
